@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Publish dry-run (type check + slow types)
+        run: deno publish --dry-run
+
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno fmt --check
+      - run: deno lint
+
+  build:
+    name: "Build: ${{ matrix.parser }} + ${{ matrix.bundler }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - parser: babel
+            bundler: native
+            test_file: tests/build_babel_native_test.ts
+          - parser: swc
+            bundler: native
+            test_file: tests/build_swc_native_test.ts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/deno
+          key: deno-${{ runner.os }}-${{ matrix.parser }}-${{ hashFiles('**/deno.json') }}
+          restore-keys: deno-${{ runner.os }}-
+      - name: "Test: ${{ matrix.parser }} + ${{ matrix.bundler }}"
+        run: deno test -A --no-check ${{ matrix.test_file }}
+
+  serve:
+    name: Dev & Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/deno
+          key: deno-${{ runner.os }}-serve-${{ hashFiles('**/deno.json') }}
+          restore-keys: deno-${{ runner.os }}-
+      - name: Test preview & dev
+        run: bash tests/serve_test.sh
