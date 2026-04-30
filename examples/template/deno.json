@@ -1,0 +1,19 @@
+{
+  "name": "@ultimate-js/template",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "publish": {
+    "include": [
+      "mod.ts",
+      "deno.json",
+      "deno.json.tmpl",
+      "ultimate.config.ts",
+      "app/**/*.ts",
+      "app/**/*.tsx"
+    ],
+    "exclude": ["dist/", ".ultimate/", "node_modules/"]
+  }
+}

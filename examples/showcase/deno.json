@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "hono": "jsr:@hono/hono@^4",
+    "react": "npm:react@19",
+    "react-dom": "npm:react-dom@19",
+    "react-dom/client": "npm:react-dom@19/client"
+  },
+  "compilerOptions": {
+    "jsx": "react",
+    "lib": ["dom", "dom.iterable", "deno.ns"]
+  }
+}
