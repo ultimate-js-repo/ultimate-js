@@ -1,0 +1,13 @@
+{
+  "workspace": ["packages/*", "examples/*"],
+  "tasks": {
+    "ultimate": "deno run -A packages/cli/mod.ts",
+    "dev": "deno run -A packages/cli/mod.ts dev examples/showcase",
+    "build": "deno run -A packages/cli/mod.ts build examples/showcase",
+    "preview": "deno run -A packages/cli/mod.ts preview examples/showcase",
+    "create": "deno run -A packages/cli/mod.ts create",
+    "test": "deno test -A --no-check tests/",
+    "fmt": "deno fmt",
+    "lint": "deno lint"
+  }
+}
