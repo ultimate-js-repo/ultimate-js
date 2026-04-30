@@ -1,0 +1,16 @@
+{
+  "name": "@ultimate-js/react",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": { ".": "./mod.ts" },
+  "imports": {
+    "react": "npm:react@^19.0.0"
+  },
+  "compilerOptions": {
+    "jsx": "react",
+    "lib": ["dom", "dom.iterable", "deno.ns"]
+  },
+  "publish": {
+    "exclude": ["tests/", "*.test.ts", "*.bench.ts"]
+  }
+}
