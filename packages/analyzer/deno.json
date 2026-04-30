@@ -1,0 +1,21 @@
+{
+  "name": "@ultimate-js/analyzer",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./mod.ts",
+    "./swc-parser": "./swc-parser.ts"
+  },
+  "imports": {
+    "@babel/parser": "npm:@babel/parser@^7.20.0",
+    "@babel/traverse": "npm:@babel/traverse@^7.20.0",
+    "@babel/generator": "npm:@babel/generator@^7.20.0",
+    "@babel/types": "npm:@babel/types@^7.20.0",
+    "@swc/wasm": "npm:@swc/wasm@^1.0.0",
+    "@std/path": "jsr:@std/path@^1",
+    "@std/fs": "jsr:@std/fs@^1"
+  },
+  "publish": {
+    "exclude": ["tests/", "*.test.ts", "*.bench.ts"]
+  }
+}
