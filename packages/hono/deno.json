@@ -1,0 +1,12 @@
+{
+  "name": "@ultimate-js/hono",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": { ".": "./mod.ts" },
+  "imports": {
+    "@std/path": "jsr:@std/path@^1"
+  },
+  "publish": {
+    "exclude": ["tests/", "*.test.ts", "*.bench.ts"]
+  }
+}
