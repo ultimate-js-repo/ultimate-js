@@ -1,0 +1,13 @@
+{
+  "name": "@ultimate-js/cli",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": { ".": "./mod.ts" },
+  "imports": {
+    "@std/path": "jsr:@std/path@^1",
+    "hono": "jsr:@hono/hono@^4"
+  },
+  "publish": {
+    "exclude": ["tests/", "*.test.ts", "*.bench.ts"]
+  }
+}
