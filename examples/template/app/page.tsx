@@ -16,7 +16,10 @@ export default function HomePage(): React.ReactElement {
       </div>
 
       <footer className="footer">
-        Built with <a href="https://github.com/anthropics/ultimate-js">Ultimate.js</a>
+        Built with{" "}
+        <a href="https://github.com/ultimate-js-repo/ultimate-js">
+          Ultimate.js
+        </a>
       </footer>
     </div>
   );

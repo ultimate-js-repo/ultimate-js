@@ -2,7 +2,7 @@ import { join, resolve } from "@std/path";
 import { intro, outro, selectPrompt, step, textPrompt } from "./tui.ts";
 
 const TEMPLATE_REPO_RAW_URL =
-  "https://raw.githubusercontent.com/Jel1ySpot/ultimate-js-empty/main";
+  "https://raw.githubusercontent.com/ultimate-js-repo/ultimate-js-empty/main";
 
 const TEMPLATE_FILES: Record<string, string> = {
   "deno.json": "./deno.json.tmpl",
@@ -120,7 +120,7 @@ async function createTemplateLoader(): Promise<Loader> {
     };
   } catch { /* not in monorepo */ }
 
-  step("Fetching template from Jel1ySpot/ultimate-js-empty");
+  step("Fetching template from ultimate-js-repo/ultimate-js-empty");
 
   return async (subpath: string) => {
     const file = subpath.replace(/^\.\//, "");
