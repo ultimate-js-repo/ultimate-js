@@ -22,6 +22,7 @@ interface ProjectOptions {
   parser: string;
   bundler: string;
   port: number;
+  endpoint: string;
 }
 
 function generateConfig(opts: ProjectOptions): string {
@@ -39,7 +40,7 @@ function generateConfig(opts: ProjectOptions): string {
 
   lines.push(`  server: {`);
   lines.push(`    port: ${opts.port},`);
-  lines.push(`    endpoint: "/_ultimate/rpc",`);
+  lines.push(`    endpoint: ${JSON.stringify(opts.endpoint)},`);
   lines.push(`  },`);
   lines.push(`  dev: {`);
   lines.push(`    port: ${opts.port},`);
@@ -75,10 +76,13 @@ export async function create(name: string): Promise<void> {
   );
   const portStr = await textPrompt("Server port", "8000");
   const port = parseInt(portStr, 10) || 8000;
+  const endpoint = normalizeEndpoint(
+    await textPrompt("RPC endpoint", "/_ultimate/rpc"),
+  );
 
   step("");
 
-  const opts: ProjectOptions = { name, parser, bundler, port };
+  const opts: ProjectOptions = { name, parser, bundler, port, endpoint };
   const loader = await createTemplateLoader();
 
   const configDst = join(dest, "ultimate.config.ts");
@@ -103,6 +107,13 @@ export async function create(name: string): Promise<void> {
   }
 
   outro(`Done! Run:  cd ${name} && deno task dev`);
+}
+
+function normalizeEndpoint(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "/_ultimate/rpc";
+  const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  return withLeadingSlash.replace(/\/+$/, "") || "/";
 }
 
 // ── Template loader ─────────────────────────────────────

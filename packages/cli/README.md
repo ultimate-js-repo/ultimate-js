@@ -14,8 +14,11 @@ ultimate preview [project] # Preview production build
 ## Interactive Create
 
 `ultimate create` prompts for:
+
 - **Parser** — babel / swc
 - **Bundler** — native / vite / rspack
 - **Server port**
+- **RPC endpoint** — defaults to `/_ultimate/rpc`
 
-Supports arrow keys, Tab, and Enter. Falls back to defaults in non-TTY environments.
+Supports arrow keys, Tab, and Enter. Falls back to defaults in non-TTY
+environments.
