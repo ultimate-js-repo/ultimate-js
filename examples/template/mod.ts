@@ -2,7 +2,8 @@
  * @ultimate-js/template
  *
  * Project template files for `ultimate create`.
- * These files are fetched by URL from JSR, not imported as modules.
+ * These files are fetched by URL from the GitHub template repository, not
+ * imported as modules.
  */
 
 /** List of template files (relative paths). */

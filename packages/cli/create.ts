@@ -1,17 +1,18 @@
 import { join, resolve } from "@std/path";
-import { intro, outro, step, selectPrompt, textPrompt } from "./tui.ts";
+import { intro, outro, selectPrompt, step, textPrompt } from "./tui.ts";
 
-const TEMPLATE_PKG = "@ultimate-js/template";
+const TEMPLATE_REPO_RAW_URL =
+  "https://raw.githubusercontent.com/Jel1ySpot/ultimate-js-empty/main";
 
 const TEMPLATE_FILES: Record<string, string> = {
-  "deno.json":                        "./deno.json.tmpl",
-  "app/layout.tsx":                   "./app/layout.tsx",
-  "app/page.tsx":                     "./app/page.tsx",
-  "app/about/page.tsx":               "./app/about/page.tsx",
-  "app/components/CounterButton.tsx":  "./app/components/CounterButton.tsx",
-  "app/components/UserCard.tsx":       "./app/components/UserCard.tsx",
-  "app/functions/counter.ts":          "./app/functions/counter.ts",
-  "app/functions/user.ts":             "./app/functions/user.ts",
+  "deno.json": "./deno.json.tmpl",
+  "app/layout.tsx": "./app/layout.tsx",
+  "app/page.tsx": "./app/page.tsx",
+  "app/about/page.tsx": "./app/about/page.tsx",
+  "app/components/CounterButton.tsx": "./app/components/CounterButton.tsx",
+  "app/components/UserCard.tsx": "./app/components/UserCard.tsx",
+  "app/functions/counter.ts": "./app/functions/counter.ts",
+  "app/functions/user.ts": "./app/functions/user.ts",
 };
 
 // ── Config generation ───────────────────────────────────
@@ -58,17 +59,22 @@ export async function create(name: string): Promise<void> {
     const entries = [];
     for await (const e of Deno.readDir(dest)) entries.push(e);
     if (entries.length > 0) {
-      console.error(`Error: directory "${name}" already exists and is not empty.`);
+      console.error(
+        `Error: directory "${name}" already exists and is not empty.`,
+      );
       Deno.exit(1);
     }
   } catch { /* doesn't exist */ }
 
   intro(`Ultimate.js \u2014 create ${name}`);
 
-  const parser  = await selectPrompt("Parser",  ["babel", "swc"] as const);
-  const bundler = await selectPrompt("Bundler", ["native", "vite", "rspack"] as const);
+  const parser = await selectPrompt("Parser", ["babel", "swc"] as const);
+  const bundler = await selectPrompt(
+    "Bundler",
+    ["native", "vite", "rspack"] as const,
+  );
   const portStr = await textPrompt("Server port", "8000");
-  const port    = parseInt(portStr, 10) || 8000;
+  const port = parseInt(portStr, 10) || 8000;
 
   step("");
 
@@ -114,25 +120,13 @@ async function createTemplateLoader(): Promise<Loader> {
     };
   } catch { /* not in monorepo */ }
 
-  const meta = await fetchJsrMeta(TEMPLATE_PKG);
-  const baseUrl = `https://jsr.io/${TEMPLATE_PKG}/${meta.version}`;
-  step(`Fetching template from ${TEMPLATE_PKG}@${meta.version}`);
+  step("Fetching template from Jel1ySpot/ultimate-js-empty");
 
   return async (subpath: string) => {
     const file = subpath.replace(/^\.\//, "");
-    const url = `${baseUrl}/${file}`;
+    const url = `${TEMPLATE_REPO_RAW_URL}/${file}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
     return await res.text();
   };
-}
-
-async function fetchJsrMeta(pkg: string): Promise<{ version: string }> {
-  const url = `https://jsr.io/${pkg}/meta.json`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Could not fetch ${url} (${res.status}). Is ${pkg} published on JSR?`);
-  }
-  const meta = await res.json();
-  return { version: meta.latest };
 }
