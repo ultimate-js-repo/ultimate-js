@@ -1,5 +1,9 @@
 {
   "workspace": ["packages/*", "examples/*"],
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1",
+    "@std/path": "jsr:@std/path@^1"
+  },
   "tasks": {
     "ultimate": "deno run -A packages/cli/mod.ts",
     "dev": "deno run -A packages/cli/mod.ts dev examples/showcase",

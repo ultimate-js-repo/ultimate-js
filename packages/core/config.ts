@@ -1,3 +1,5 @@
+import { exists } from "@std/fs";
+
 export type ServerOutput = "standalone" | "executable";
 export type BundlerType = "native" | "vite" | "rspack";
 export type ParserType = "babel" | "swc";
@@ -30,7 +32,12 @@ export interface ResolvedConfig {
   bundler: BundlerType;
   parser: ParserType;
   framework: FrameworkType;
-  server: { port: number; host: string; endpoint: string; output: ServerOutput };
+  server: {
+    port: number;
+    host: string;
+    endpoint: string;
+    output: ServerOutput;
+  };
   dev: { port: number; apiPort: number };
   client: { rpcBase: string };
 }
@@ -73,11 +80,9 @@ export async function loadConfig(projectRoot: string): Promise<ResolvedConfig> {
   const { runtimeImport } = await import("./runtime-import.ts");
   for (const name of ["ultimate.config.ts", "ultimate.config.js"]) {
     const path = `${projectRoot}/${name}`;
-    try {
-      await Deno.stat(path);
-      const mod = await runtimeImport(path);
-      return resolveConfig(mod.default as UltimateConfig | undefined);
-    } catch { /* not found, try next */ }
+    if (!(await exists(path, { isFile: true }))) continue;
+    const mod = await runtimeImport(path);
+    return resolveConfig(mod.default as UltimateConfig | undefined);
   }
   return resolveConfig();
 }

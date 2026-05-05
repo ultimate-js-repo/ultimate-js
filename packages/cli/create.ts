@@ -1,4 +1,5 @@
 import { join, resolve } from "@std/path";
+import { ensureDir, exists } from "@std/fs";
 import { intro, outro, selectPrompt, step, textPrompt } from "./tui.ts";
 
 const TEMPLATE_REPO_RAW_URL =
@@ -86,14 +87,14 @@ export async function create(name: string): Promise<void> {
   const loader = await createTemplateLoader();
 
   const configDst = join(dest, "ultimate.config.ts");
-  await Deno.mkdir(dest, { recursive: true });
+  await ensureDir(dest);
   await Deno.writeTextFile(configDst, generateConfig(opts));
   step("+ ultimate.config.ts");
 
   for (const [destFile, subpath] of Object.entries(TEMPLATE_FILES)) {
     const dst = join(dest, destFile);
     const parent = dst.substring(0, dst.lastIndexOf("/"));
-    await Deno.mkdir(parent, { recursive: true });
+    await ensureDir(parent);
 
     let content = await loader(subpath);
 
@@ -123,13 +124,12 @@ type Loader = (subpath: string) => Promise<string>;
 async function createTemplateLoader(): Promise<Loader> {
   const cliDir = new URL(".", import.meta.url).pathname;
   const localDir = resolve(cliDir, "../../examples/template");
-  try {
-    await Deno.stat(join(localDir, "ultimate.config.ts"));
+  if (await exists(join(localDir, "ultimate.config.ts"), { isFile: true })) {
     return async (subpath: string) => {
       const file = subpath.replace(/^\.\//, "");
       return await Deno.readTextFile(join(localDir, file));
     };
-  } catch { /* not in monorepo */ }
+  }
 
   step("Fetching template from ultimate-js-repo/ultimate-js-empty");
 

@@ -5,6 +5,7 @@
   "exports": { ".": "./mod.ts" },
   "imports": {
     "@std/path": "jsr:@std/path@^1",
+    "@std/fs": "jsr:@std/fs@^1",
     "@rspack/core": "npm:@rspack/core@^1.0.0"
   },
   "publish": {

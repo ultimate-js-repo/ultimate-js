@@ -1,5 +1,5 @@
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { assertEquals } from "@std/assert";
+import { join } from "@std/path";
 
 export const ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 export const SHOWCASE = join(ROOT, "examples/showcase");
@@ -23,11 +23,18 @@ export async function writeConfig(opts: {
   lines.push(`    endpoint: "/_ultimate/rpc",`);
   if (opts.output) lines.push(`    output: "${opts.output}",`);
   lines.push(`  },`);
-  lines.push(`  dev: { port: ${opts.port ?? 9000}, apiPort: ${(opts.port ?? 9000) + 1} },`);
+  lines.push(
+    `  dev: { port: ${opts.port ?? 9000}, apiPort: ${
+      (opts.port ?? 9000) + 1
+    } },`,
+  );
   lines.push(`});`);
   lines.push(`export default config;`);
   lines.push(``);
-  await Deno.writeTextFile(join(SHOWCASE, "ultimate.config.ts"), lines.join("\n"));
+  await Deno.writeTextFile(
+    join(SHOWCASE, "ultimate.config.ts"),
+    lines.join("\n"),
+  );
 }
 
 export async function clean(): Promise<void> {
@@ -49,7 +56,12 @@ export async function buildTest(opts: {
   output: string;
 }): Promise<void> {
   await clean();
-  await writeConfig({ parser: opts.parser, bundler: opts.bundler, output: opts.output, port: 9100 });
+  await writeConfig({
+    parser: opts.parser,
+    bundler: opts.bundler,
+    output: opts.output,
+    port: 9100,
+  });
 
   const result = await new Deno.Command(Deno.execPath(), {
     args: ["run", "-A", CLI, "build", SHOWCASE],
@@ -67,7 +79,11 @@ export async function buildTest(opts: {
   const serverMain = join(SHOWCASE, "dist/server/main.ts");
 
   assertEquals((await Deno.stat(clientJs)).isFile, true, "client.js missing");
-  assertEquals((await Deno.stat(clientHtml)).isFile, true, "index.html missing");
+  assertEquals(
+    (await Deno.stat(clientHtml)).isFile,
+    true,
+    "index.html missing",
+  );
   assertEquals((await Deno.stat(serverMain)).isFile, true, "main.ts missing");
 
   if (opts.output === "executable") {
@@ -83,15 +99,21 @@ export async function rpcCall(
   functionId: string,
   args: unknown[] = [],
 ): Promise<{ ok: boolean; value?: unknown }> {
-  const res = await fetch(`http://localhost:${port}/_ultimate/rpc/${functionId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "RemoteFunctionCalling", version: 1, args }),
-  });
+  const res = await fetch(
+    `http://localhost:${port}/_ultimate/rpc/${functionId}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "RemoteFunctionCalling", version: 1, args }),
+    },
+  );
   return await res.json();
 }
 
-export async function waitForServer(port: number, retries = 20): Promise<boolean> {
+export async function waitForServer(
+  port: number,
+  retries = 20,
+): Promise<boolean> {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(`http://localhost:${port}/`);
@@ -109,7 +131,9 @@ export function killPort(port: number): void {
   } catch { /* ok */ }
 }
 
-export async function readFirstHash(manifestRelPath: string): Promise<string | null> {
+export async function readFirstHash(
+  manifestRelPath: string,
+): Promise<string | null> {
   try {
     const content = await Deno.readTextFile(join(SHOWCASE, manifestRelPath));
     const m = content.match(/"([a-f0-9]{8})"/);

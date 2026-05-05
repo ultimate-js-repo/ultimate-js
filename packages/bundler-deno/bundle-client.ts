@@ -1,4 +1,5 @@
-import { join, relative, resolve, dirname } from "@std/path";
+import { dirname, join, relative, resolve } from "@std/path";
+import { exists } from "@std/fs";
 import type { CompileResult } from "@ultimate-js/compiler";
 import type { RouteRecord } from "@ultimate-js/router";
 import type { DocumentHead, ResolvedConfig } from "@ultimate-js/core";
@@ -34,7 +35,8 @@ export async function transformAndCopyAppSources(
     const source = await Deno.readTextFile(srcFile);
 
     let needsTransform = false;
-    const importRegex = /(?:import|export)\s+(?:[\s\S]*?)\s+from\s+["']([^"']+)["']/g;
+    const importRegex =
+      /(?:import|export)\s+(?:[\s\S]*?)\s+from\s+["']([^"']+)["']/g;
     let m;
     while ((m = importRegex.exec(source)) !== null) {
       const specifier = m[1];
@@ -51,7 +53,13 @@ export async function transformAndCopyAppSources(
 
     if (needsTransform) {
       console.log(`    Transforming: ${relPath}`);
-      const transformed = transformClientSource(source, srcFile, destFile, serverFunctionFiles, proxyFilePath);
+      const transformed = transformClientSource(
+        source,
+        srcFile,
+        destFile,
+        serverFunctionFiles,
+        proxyFilePath,
+      );
       await writeTextFile(destFile, transformed);
     } else {
       await writeTextFile(destFile, source);
@@ -64,27 +72,22 @@ export async function transformAndCopyAppSources(
 /**
  * Load the head export from app/layout.tsx (if it exists).
  */
-export async function loadDocumentHead(projectRoot: string): Promise<DocumentHead> {
+export async function loadDocumentHead(
+  projectRoot: string,
+): Promise<DocumentHead> {
   const layoutPath = join(projectRoot, "app", "layout.tsx");
-  try {
-    await Deno.stat(layoutPath);
+  if (await exists(layoutPath, { isFile: true })) {
     const mod = await runtimeImport(layoutPath);
     return (mod.head as DocumentHead) ?? {};
-  } catch {
-    return {};
   }
+  return {};
 }
 
 /**
  * Check whether app/layout.tsx exists.
  */
 export async function hasLayoutFile(projectRoot: string): Promise<boolean> {
-  try {
-    await Deno.stat(join(projectRoot, "app", "layout.tsx"));
-    return true;
-  } catch {
-    return false;
-  }
+  return await exists(join(projectRoot, "app", "layout.tsx"), { isFile: true });
 }
 
 async function createBundler(config?: ResolvedConfig): Promise<BundlerAdapter> {
@@ -160,7 +163,8 @@ export async function generateStaticPaths(
 
     if (typeof mod.generateStaticParams !== "function") continue;
 
-    const paramsList: Record<string, string>[] = await mod.generateStaticParams();
+    const paramsList: Record<string, string>[] = await mod
+      .generateStaticParams();
 
     for (const params of paramsList) {
       // Replace :param placeholders with concrete values
