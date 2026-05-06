@@ -44,6 +44,7 @@ export class RspackBundler implements BundlerAdapter {
         resolve: {
           extensions: [".tsx", ".ts", ".jsx", ".js", ".json"],
           alias: aliases,
+          modules: [join(options.projectRoot, "node_modules"), "node_modules"],
         },
         module: {
           rules: [
