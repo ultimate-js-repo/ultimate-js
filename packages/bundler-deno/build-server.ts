@@ -15,6 +15,7 @@ export async function buildServer(
 ): Promise<void> {
   const serverDist = join(distDir, "server");
 
+  await copyDir(join(distDir, "client"), join(serverDist, "client"));
   await copyDir(generatedDir, join(serverDist, ".ultimate", "generated"));
   await copyDir(
     join(appDir, "functions"),
@@ -79,11 +80,15 @@ function generateServerMainCode(config: ResolvedConfig): string {
 // Auto-generated - do not edit
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { createStaticHandler } from "@ultimate-js/hono";
 import { createRpcHandler } from "@ultimate-js/rpc-server";
 import { serverManifest } from "./.ultimate/generated/server-manifest.ts";
 
 const app = new Hono();
 const dev = Deno.env.get("DENO_ENV") !== "production";
+const serveClient = createStaticHandler(
+  new URL("./client", import.meta.url).pathname,
+);
 
 app.use(${JSON.stringify(ep + "/*")}, cors({
   origin: "*",
@@ -103,7 +108,14 @@ app.post(${JSON.stringify(ep + "/:functionId")}, async (c) => {
   return await rpcHandler(c.req.raw, c.req.param("functionId"));
 });
 
-app.get("*", (c) => {
+app.get("*", async (c) => {
+  const pathname = new URL(c.req.raw.url).pathname;
+  const staticResponse = await serveClient(c.req.raw, pathname);
+  if (staticResponse) return staticResponse;
+
+  const indexResponse = await serveClient(c.req.raw, "/index.html");
+  if (indexResponse) return indexResponse;
+
   return c.html(\`<!doctype html>
 <html>
 <head><meta charset="UTF-8"/><title>Ultimate.js</title></head>

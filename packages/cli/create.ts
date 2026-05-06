@@ -6,7 +6,7 @@ const TEMPLATE_REPO_RAW_URL =
   "https://raw.githubusercontent.com/ultimate-js-repo/ultimate-js-empty/main";
 
 const TEMPLATE_FILES: Record<string, string> = {
-  "deno.json": "./deno.json.tmpl",
+  "deno.json": "./deno.json",
   "app/layout.tsx": "./app/layout.tsx",
   "app/page.tsx": "./app/page.tsx",
   "app/about/page.tsx": "./app/about/page.tsx",

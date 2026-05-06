@@ -1,4 +1,4 @@
-import { dirname, join, relative, resolve } from "@std/path";
+import { dirname, join, relative, resolve, toFileUrl } from "@std/path";
 import { exists } from "@std/fs";
 import type { CompileResult } from "@ultimate-js/compiler";
 import type { RouteRecord } from "@ultimate-js/router";
@@ -77,10 +77,43 @@ export async function loadDocumentHead(
 ): Promise<DocumentHead> {
   const layoutPath = join(projectRoot, "app", "layout.tsx");
   if (await exists(layoutPath, { isFile: true })) {
-    const mod = await runtimeImport(layoutPath);
-    return (mod.head as DocumentHead) ?? {};
+    return await importDocumentHead(projectRoot, layoutPath);
   }
   return {};
+}
+
+async function importDocumentHead(
+  projectRoot: string,
+  layoutPath: string,
+): Promise<DocumentHead> {
+  const code = `
+const mod = await import(${JSON.stringify(toFileUrl(layoutPath).href)});
+console.log(JSON.stringify(mod.head ?? {}));
+`;
+
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "eval",
+      "--no-check",
+      "--config",
+      "deno.json",
+      code,
+    ],
+    cwd: projectRoot,
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const output = await command.output();
+
+  if (!output.success) {
+    const stderr = new TextDecoder().decode(output.stderr);
+    throw new Error(
+      `failed to load document head:\n${stderr.substring(0, 500)}`,
+    );
+  }
+
+  const stdout = new TextDecoder().decode(output.stdout).trim();
+  return stdout ? JSON.parse(stdout) as DocumentHead : {};
 }
 
 /**

@@ -12,6 +12,8 @@ export class DenoBundler implements BundlerAdapter {
         options.entry,
         "--platform=browser",
         "--no-check",
+        "--config",
+        "deno.json",
         "-o",
         options.outFile,
       ],
