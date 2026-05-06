@@ -132,6 +132,10 @@ export async function startDevServer(
     return await rpcHandler(c.req.raw, c.req.param("functionId"));
   });
 
+  api.options(`${endpoint}/:functionId`, async (c: HonoContext) => {
+    return await rpcHandler(c.req.raw, c.req.param("functionId"));
+  });
+
   // ── Static server ──
 
   const app = new Hono();
@@ -146,6 +150,10 @@ export async function startDevServer(
   });
 
   app.post(`${endpoint}/:functionId`, async (c: HonoContext) => {
+    return await rpcHandler(c.req.raw, c.req.param("functionId"));
+  });
+
+  app.options(`${endpoint}/:functionId`, async (c: HonoContext) => {
     return await rpcHandler(c.req.raw, c.req.param("functionId"));
   });
 

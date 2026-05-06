@@ -100,11 +100,13 @@ export const head: DocumentHead = {
       .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
       @media (max-width: 768px) { .demo-grid { grid-template-columns: 1fr; } }
       .demo-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color var(--transition); }
+      .demo-card--wide { grid-column: 1 / -1; }
       .demo-card:hover { border-color: var(--border-hover); }
       .demo-card-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
       .demo-card-tag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
       .demo-card-tag--server { background: var(--accent-bg); border: 1px solid var(--accent-border); color: var(--accent-light); }
       .demo-card-tag--client { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
+      .demo-card-tag--stream { background: var(--amber-bg); border: 1px solid rgba(251, 191, 36, 0.2); color: var(--amber); }
       .demo-card-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
       .demo-card-subtitle { font-size: 13px; color: var(--text-tertiary); margin-top: 4px; }
       .demo-card-body { padding: 24px; }
@@ -129,6 +131,15 @@ export const head: DocumentHead = {
       .user-meta { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
       .user-role { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: var(--font-mono); background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
       .user-empty { text-align: center; padding: 24px 0; color: var(--text-tertiary); font-size: 14px; }
+
+      .stream-btn { width: 100%; padding: 12px 20px; border-radius: var(--radius-sm); border: 1px solid rgba(251, 191, 36, 0.2); background: var(--amber-bg); color: var(--amber); font-size: 14px; font-weight: 600; cursor: pointer; transition: all var(--transition); font-family: var(--font-sans); margin-bottom: 20px; }
+      .stream-btn:hover { background: var(--amber); border-color: var(--amber); color: var(--bg); }
+      .stream-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+      .stream-output { min-height: 112px; padding: 18px; border-radius: var(--radius); background: var(--bg); border: 1px solid var(--border); color: var(--text-secondary); font-family: var(--font-mono); font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+      .stream-caret { display: inline-block; width: 8px; height: 18px; margin-left: 2px; background: var(--amber); vertical-align: text-bottom; animation: blink 900ms steps(2, start) infinite; }
+      @keyframes blink { to { visibility: hidden; } }
+      .stream-meta { margin-top: 12px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 12px; }
+      .stream-error { margin-top: 12px; color: var(--red); font-family: var(--font-mono); font-size: 12px; }
 
       .code-section { max-width: var(--max-width); margin: 0 auto; padding: 0 24px 80px; }
       .code-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }

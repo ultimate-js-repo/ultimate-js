@@ -1,6 +1,6 @@
 {
   "name": "@ultimate-js/bundler-deno",
-  "version": "0.1.3",
+  "version": "0.2.3",
   "license": "MIT",
   "exports": { ".": "./mod.ts" },
   "imports": {

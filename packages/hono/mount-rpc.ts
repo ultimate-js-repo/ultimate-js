@@ -7,6 +7,10 @@ interface HonoLike {
     path: string,
     handler: (c: HonoContext) => Promise<Response> | Response,
   ): void;
+  options(
+    path: string,
+    handler: (c: HonoContext) => Promise<Response> | Response,
+  ): void;
 }
 
 interface HonoContext {
@@ -35,6 +39,11 @@ export function mountUltimateRpc(
   const prefix = path.replace(/\/+$/, "");
 
   app.post(`${prefix}/:functionId`, async (c: HonoContext) => {
+    const functionId = c.req.param("functionId");
+    return await handler(c.req.raw, functionId);
+  });
+
+  app.options(`${prefix}/:functionId`, async (c: HonoContext) => {
     const functionId = c.req.param("functionId");
     return await handler(c.req.raw, functionId);
   });

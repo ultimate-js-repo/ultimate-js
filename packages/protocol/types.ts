@@ -15,6 +15,14 @@ export type RemoteFunctionCalling = {
   };
 };
 
+/** Placeholder sent in request args when a client passes a callback function. */
+export type RemoteFunctionCallbackRef = {
+  /** Marker used to distinguish callback refs from user data. */
+  __ultimate_rpc_callback: true;
+  /** Opaque callback identifier scoped to one RPC call. */
+  id: string;
+};
+
 /** Successful response envelope returned after a remote function resolves. */
 export type RemoteFunctionSuccess = {
   /** Discriminator for all remote function result envelopes. */
@@ -54,3 +62,53 @@ export type RemoteFunctionFailure = {
 export type RemoteFunctionResult =
   | RemoteFunctionSuccess
   | RemoteFunctionFailure;
+
+/** Serialized error details used by RPC and streaming protocol envelopes. */
+export type RemoteFunctionError = RemoteFunctionFailure["error"];
+
+/** SSE message carrying one queued RPC result and its opaque resume cursor. */
+export type RemoteFunctionSseMessage = {
+  /** Discriminator for queued SSE payload messages. */
+  type: "message";
+  /** Opaque UUID cursor assigned by the server. */
+  cursor: string;
+  /** RPC result carried by this queued message. */
+  result: RemoteFunctionResult;
+};
+
+/** SSE message instructing the client to invoke a callback argument. */
+export type RemoteFunctionSseCallback = {
+  /** Discriminator for queued callback invocations. */
+  type: "callback";
+  /** Opaque UUID cursor assigned by the server. */
+  cursor: string;
+  /** Callback identifier originally sent by the client. */
+  callbackId: string;
+  /** Serialized arguments passed by the server to the callback. */
+  args: unknown[];
+};
+
+/** SSE marker emitted when there are no queued messages left to send. */
+export type RemoteFunctionSseEnd = {
+  /** Discriminator for the terminal queue marker. */
+  type: "end";
+  /** Optional latest cursor known to the server. */
+  cursor?: string;
+};
+
+/** SSE protocol-level error. User function failures use RemoteFunctionResult. */
+export type RemoteFunctionSseError = {
+  /** Discriminator for stream/protocol errors. */
+  type: "error";
+  /** Optional latest cursor known to the server. */
+  cursor?: string;
+  /** Serialized protocol error details. */
+  error: RemoteFunctionError;
+};
+
+/** Payloads emitted by the RPC SSE transport. */
+export type RemoteFunctionSseEvent =
+  | RemoteFunctionSseMessage
+  | RemoteFunctionSseCallback
+  | RemoteFunctionSseEnd
+  | RemoteFunctionSseError;

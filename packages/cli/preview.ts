@@ -44,6 +44,10 @@ export async function preview(
     return await rpcHandler(c.req.raw, c.req.param("functionId"));
   });
 
+  app.options(`${ep}/:functionId`, async (c: HonoContext) => {
+    return await rpcHandler(c.req.raw, c.req.param("functionId"));
+  });
+
   const clientDir = join(projectRoot, "dist", "client");
   const serveClient = createStaticHandler(clientDir);
 

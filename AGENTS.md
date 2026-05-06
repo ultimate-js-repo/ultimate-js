@@ -133,3 +133,9 @@ supports `--port`, `--api-port`, `--host`, and `--rpc-endpoint`; server runtime
 entry points such as `preview`, `dist/server/main.ts`, and compiled executable
 output support `--port`, `--host`, and `--rpc-endpoint`. The resolved config is
 still baked into server output as the default runtime options.
+
+RPC streaming resume uses `Ultimate-Session-Cursor`; do not reintroduce
+`Ultimate-Session-Id`. SSE cursor values are server-generated UUIDs, opaque to
+clients, and resume queues are currently in-memory and single-process. Client
+callback arguments are encoded into the RPC protocol and invoked from
+cursor-bearing SSE `callback` events.

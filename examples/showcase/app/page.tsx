@@ -1,6 +1,7 @@
 // deno-lint-ignore-file jsx-curly-braces
 import React, { useState } from "react";
 import { CounterButton } from "./components/CounterButton.tsx";
+import { StreamTextCard } from "./components/StreamTextCard.tsx";
 import { UserCard } from "./components/UserCard.tsx";
 
 export default function Page(): React.ReactElement {
@@ -191,6 +192,7 @@ export default function Page(): React.ReactElement {
         <div className="demo-grid">
           <CounterButton />
           <UserCard />
+          <StreamTextCard />
         </div>
       </section>
 

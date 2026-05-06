@@ -171,7 +171,7 @@ const serveClient = createStaticHandler(
 app.use(runtimeOptions.endpoint + "/*", cors({
   origin: "*",
   allowMethods: ["POST", "OPTIONS"],
-  allowHeaders: ["Content-Type"],
+  allowHeaders: ["Content-Type", "Accept", "Ultimate-Session-Cursor"],
 }));
 
 const rpcHandler = createRpcHandler({
