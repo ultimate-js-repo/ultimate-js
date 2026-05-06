@@ -1,0 +1,109 @@
+name: Publish JSR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/*/deno.json"
+      - "examples/template/deno.json"
+      - ".github/workflows/publish-jsr.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: jsr-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    name: Detect Version Changes
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.changed.outputs.packages }}
+      has_changes: ${{ steps.changed.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: changed
+        name: Build publish matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          base="${{ github.event.before }}"
+          head="${{ github.sha }}"
+
+          if [[ "$base" =~ ^0+$ ]]; then
+            base="$(git rev-list --max-parents=0 "$head")"
+          fi
+
+          tmp="$(mktemp)"
+          for config in packages/*/deno.json examples/template/deno.json; do
+            [ -f "$config" ] || continue
+
+            name="$(jq -r '.name // empty' "$config")"
+            version="$(jq -r '.version // empty' "$config")"
+            [ -n "$name" ] && [ -n "$version" ] || continue
+
+            old_version="$(
+              git show "$base:$config" 2>/dev/null \
+                | jq -r '.version // empty' 2>/dev/null \
+                || true
+            )"
+
+            if [ "$old_version" != "$version" ]; then
+              jq -cn \
+                --arg dir "$(dirname "$config")" \
+                --arg name "$name" \
+                --arg version "$version" \
+                '{dir: $dir, name: $name, version: $version}' >> "$tmp"
+            fi
+          done
+
+          packages="$(jq -s -c . "$tmp")"
+          echo "packages=$packages" >> "$GITHUB_OUTPUT"
+
+          if [ "$packages" = "[]" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No package version changes found."
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "$packages" | jq .
+          fi
+
+  publish:
+    name: Publish ${{ matrix.name }}@${{ matrix.version }}
+    runs-on: ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.detect.outputs.packages) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Skip existing version
+        id: existing
+        shell: bash
+        run: |
+          set -euo pipefail
+          if deno info "jsr:${{ matrix.name }}@${{ matrix.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "${{ matrix.name }}@${{ matrix.version }} already exists on JSR."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        if: steps.existing.outputs.exists != 'true'
+        working-directory: ${{ matrix.dir }}
+        run: deno publish
