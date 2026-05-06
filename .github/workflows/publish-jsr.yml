@@ -51,6 +51,24 @@ jobs:
               "https://api.jsr.io/scopes/${scope}/packages/${name}/versions/${version}"
           }
 
+          publish_order() {
+            case "$1" in
+              @ultimate-js/core) echo 10 ;;
+              @ultimate-js/protocol) echo 20 ;;
+              @ultimate-js/router) echo 30 ;;
+              @ultimate-js/analyzer) echo 40 ;;
+              @ultimate-js/generator) echo 50 ;;
+              @ultimate-js/rpc-server) echo 60 ;;
+              @ultimate-js/hono) echo 70 ;;
+              @ultimate-js/compiler) echo 80 ;;
+              @ultimate-js/bundler-deno) echo 90 ;;
+              @ultimate-js/dev-server) echo 100 ;;
+              @ultimate-js/rspack-plugin) echo 110 ;;
+              @ultimate-js/cli) echo 120 ;;
+              *) echo 999 ;;
+            esac
+          }
+
           tmp="$(mktemp)"
           for config in packages/*/deno.json; do
             [ -f "$config" ] || continue
@@ -76,11 +94,12 @@ jobs:
                 --arg dir "$(dirname "$config")" \
                 --arg name "$name" \
                 --arg version "$version" \
-                '{dir: $dir, name: $name, version: $version}' >> "$tmp"
+                --argjson order "$(publish_order "$name")" \
+                '{dir: $dir, name: $name, version: $version, order: $order}' >> "$tmp"
             fi
           done
 
-          packages="$(jq -s -c . "$tmp")"
+          packages="$(jq -s -c 'sort_by(.order) | map(del(.order))' "$tmp")"
           echo "packages=$packages" >> "$GITHUB_OUTPUT"
 
           if [ "$packages" = "[]" ]; then
@@ -98,6 +117,7 @@ jobs:
     if: needs.detect.outputs.has_changes == 'true'
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         include: ${{ fromJson(needs.detect.outputs.packages) }}
     steps:
