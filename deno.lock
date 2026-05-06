@@ -384,6 +384,12 @@
           "jsr:@std/fs@1",
           "jsr:@std/path@1"
         ]
+      },
+      "packages/rspack-plugin": {
+        "dependencies": [
+          "jsr:@std/fs@1",
+          "jsr:@std/path@1"
+        ]
       }
     }
   }
