@@ -23,7 +23,7 @@ jobs:
       packages: ${{ steps.changed.outputs.packages }}
       has_changes: ${{ steps.changed.outputs.has_changes }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -84,7 +84,7 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.detect.outputs.packages) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: denoland/setup-deno@v2
         with:
