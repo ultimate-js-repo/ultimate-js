@@ -1,4 +1,4 @@
-import { resolve, relative, dirname } from "@std/path";
+import { dirname, relative, resolve } from "@std/path";
 
 /**
  * Transform a client-side source file by replacing imports of server function
@@ -11,12 +11,11 @@ export function transformClientSource(
   serverFunctionFiles: Set<string>,
   proxyFilePath: string,
 ): string {
-  const importRegex = /(import\s+(?:[\s\S]*?)\s+from\s+["']([^"']+)["']\s*;?|import\s+["']([^"']+)["']\s*;?|export\s+(?:[\s\S]*?)\s+from\s+["']([^"']+)["']\s*;?)/g;
-
   let result = source;
   let match: RegExpExecArray | null;
 
-  const re = /(import\s+(?:[\s\S]*?)\s+from\s+["']([^"']+)["']\s*;?|import\s+["']([^"']+)["']\s*;?|export\s+(?:[\s\S]*?)\s+from\s+["']([^"']+)["']\s*;?)/g;
+  const re =
+    /(import\s+(?:[\s\S]*?)\s+from\s+["']([^"']+)["']\s*;?|import\s+["']([^"']+)["']\s*;?|export\s+(?:[\s\S]*?)\s+from\s+["']([^"']+)["']\s*;?)/g;
 
   while ((match = re.exec(source)) !== null) {
     const specifier = match[2] || match[3] || match[4];
@@ -25,7 +24,7 @@ export function transformClientSource(
     if (!specifier.startsWith(".")) continue;
 
     const originalDir = dirname(originalFilePath);
-    let resolved = resolve(originalDir, specifier);
+    const resolved = resolve(originalDir, specifier);
 
     let foundResolved: string | null = null;
     for (const ext of [".ts", ".tsx", "/index.ts", "/index.tsx", ""]) {

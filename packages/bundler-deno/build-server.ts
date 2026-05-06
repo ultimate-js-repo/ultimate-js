@@ -1,5 +1,5 @@
 import { join } from "@std/path";
-import { ensureDir, copyDir, writeTextFile } from "./utils.ts";
+import { copyDir, writeTextFile } from "./utils.ts";
 import type { ResolvedConfig } from "@ultimate-js/core";
 
 /**
@@ -16,7 +16,10 @@ export async function buildServer(
   const serverDist = join(distDir, "server");
 
   await copyDir(generatedDir, join(serverDist, ".ultimate", "generated"));
-  await copyDir(join(appDir, "functions"), join(serverDist, "app", "functions"));
+  await copyDir(
+    join(appDir, "functions"),
+    join(serverDist, "app", "functions"),
+  );
 
   try {
     await copyDir(join(appDir, "shared"), join(serverDist, "app", "shared"));
@@ -49,7 +52,8 @@ async function compileServerExecutable(
       "compile",
       "-A",
       "--no-check",
-      "--output", outBin,
+      "--output",
+      outBin,
       mainTs,
     ],
     cwd: projectRoot,

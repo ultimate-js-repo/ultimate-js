@@ -13,9 +13,17 @@ export async function scanSourceFiles(appDir: string): Promise<string[]> {
   ];
 
   for (const pattern of patterns) {
-    for await (const entry of expandGlob(pattern, {
-      exclude: ["**/node_modules/**", "**/dist/**", "**/.ultimate/**", "**/client-entry.*", "**/server-entry.*"],
-    })) {
+    for await (
+      const entry of expandGlob(pattern, {
+        exclude: [
+          "**/node_modules/**",
+          "**/dist/**",
+          "**/.ultimate/**",
+          "**/client-entry.*",
+          "**/server-entry.*",
+        ],
+      })
+    ) {
       files.push(entry.path);
     }
   }

@@ -2,15 +2,15 @@ import { join } from "@std/path";
 import { scanRoutes } from "@ultimate-js/router";
 import type { RouteRecord } from "@ultimate-js/router";
 import {
-  scanSourceFiles,
   analyzeModule,
-  classifyFunctions,
   BabelParserAdapter,
+  classifyFunctions,
+  scanSourceFiles,
 } from "@ultimate-js/analyzer";
 import type {
-  ModuleAnalysis,
-  ClassifiedFunction,
   ClassificationResult,
+  ClassifiedFunction,
+  ModuleAnalysis,
   ParserAdapter,
 } from "@ultimate-js/analyzer";
 import { formatDiagnostic } from "@ultimate-js/core";
@@ -40,7 +40,9 @@ async function createParser(config?: ResolvedConfig): Promise<ParserAdapter> {
       return new BabelParserAdapter();
     case "swc": {
       // Lazy import — @swc/wasm is only loaded when parser is "swc"
-      const { SwcParserAdapter } = await import("@ultimate-js/analyzer/swc-parser");
+      const { SwcParserAdapter } = await import(
+        "@ultimate-js/analyzer/swc-parser"
+      );
       return new SwcParserAdapter();
     }
     default:
@@ -48,7 +50,9 @@ async function createParser(config?: ResolvedConfig): Promise<ParserAdapter> {
   }
 }
 
-export async function compileProject(projectConfig: ProjectConfig): Promise<CompileResult> {
+export async function compileProject(
+  projectConfig: ProjectConfig,
+): Promise<CompileResult> {
   const projectRoot = projectConfig.projectRoot;
   const appDir = join(projectRoot, projectConfig.appDir || "app");
   const parser = await createParser(projectConfig.config);
@@ -74,7 +78,9 @@ export async function compileProject(projectConfig: ProjectConfig): Promise<Comp
     for (const diag of classification.diagnostics) {
       console.log(`  ${formatDiagnostic(diag)}`);
     }
-    const errors = classification.diagnostics.filter((d) => d.level === "error");
+    const errors = classification.diagnostics.filter((d) =>
+      d.level === "error"
+    );
     if (errors.length > 0) {
       throw new Error(`Compilation failed: ${errors.length} error(s)`);
     }

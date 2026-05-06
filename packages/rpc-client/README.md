@@ -11,10 +11,11 @@ Browser-side RPC client for Ultimate.js. Calls server functions transparently.
 ## Usage
 
 ```ts
-import { setRemoteEndpoint, remoteFunctionCall } from "@ultimate-js/rpc-client";
+import { remoteFunctionCall, setRemoteEndpoint } from "@ultimate-js/rpc-client";
 
 setRemoteEndpoint("/_ultimate/rpc");
 const user = await remoteFunctionCall<User>("abc123", ["1"]);
 ```
 
-> In normal usage, the compiler generates proxy functions that call `remoteFunctionCall` automatically. You don't call it directly.
+> In normal usage, the compiler generates proxy functions that call
+> `remoteFunctionCall` automatically. You don't call it directly.

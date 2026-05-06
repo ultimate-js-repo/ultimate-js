@@ -3,7 +3,9 @@
  * Implement this to add support for a new AST parser (Babel, SWC, etc.).
  */
 export interface ParserAdapter {
-  parseModule(input: { file: string; code: string }): ParsedModule | Promise<ParsedModule>;
+  parseModule(
+    input: { file: string; code: string },
+  ): ParsedModule | Promise<ParsedModule>;
 }
 
 export type ImportRecord = {

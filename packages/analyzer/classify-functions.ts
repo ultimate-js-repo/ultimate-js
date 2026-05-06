@@ -1,4 +1,4 @@
-import type { UserFunctionInfo, ModuleAnalysis } from "./analyze-module.ts";
+import type { ModuleAnalysis, UserFunctionInfo } from "./analyze-module.ts";
 import type { Diagnostic } from "@ultimate-js/core";
 
 /**
@@ -78,18 +78,33 @@ export function classifyFunctions(
     localNameToId.set(analysis.file, nameMap);
   }
 
-  const importMap = new Map<string, Map<string, { source: string; importedName: string }>>();
+  const importMap = new Map<
+    string,
+    Map<string, { source: string; importedName: string }>
+  >();
   for (const analysis of analyses) {
-    const fileImportMap = new Map<string, { source: string; importedName: string }>();
+    const fileImportMap = new Map<
+      string,
+      { source: string; importedName: string }
+    >();
     for (const imp of analysis.imports) {
       for (const name of imp.names) {
-        fileImportMap.set(name.local, { source: imp.source, importedName: name.imported });
+        fileImportMap.set(name.local, {
+          source: imp.source,
+          importedName: name.imported,
+        });
       }
       if (imp.defaultImport) {
-        fileImportMap.set(imp.defaultImport, { source: imp.source, importedName: "default" });
+        fileImportMap.set(imp.defaultImport, {
+          source: imp.source,
+          importedName: "default",
+        });
       }
       if (imp.namespaceImport) {
-        fileImportMap.set(imp.namespaceImport, { source: imp.source, importedName: "*" });
+        fileImportMap.set(imp.namespaceImport, {
+          source: imp.source,
+          importedName: "*",
+        });
       }
     }
     importMap.set(analysis.file, fileImportMap);
@@ -109,25 +124,32 @@ export function classifyFunctions(
         const importEntry = fileImportMap.get(call.calleeName)!;
 
         if (isUserModule(importEntry.source)) {
-          const calleeFile = resolveImportPath(classified.info.file, importEntry.source);
-          const calleeAnalysis = calleeFile ? fileAnalysisMap.get(calleeFile) : undefined;
+          const calleeFile = resolveImportPath(
+            classified.info.file,
+            importEntry.source,
+          );
+          const calleeAnalysis = calleeFile
+            ? fileAnalysisMap.get(calleeFile)
+            : undefined;
 
           if (calleeAnalysis) {
             const calleeName = importEntry.importedName;
             const calleeFn = calleeAnalysis.functions.find(
-              (f) => f.exportName === calleeName || f.name === calleeName
+              (f) => f.exportName === calleeName || f.name === calleeName,
             );
 
             if (calleeFn) {
               const calleeClassified = functions.get(calleeFn.id);
               if (calleeClassified) {
                 if (
-                  (classified.runtime === "server" || classified.runtime === "shared") &&
+                  (classified.runtime === "server" ||
+                    classified.runtime === "shared") &&
                   calleeClassified.runtime === "client"
                 ) {
                   diagnostics.push({
                     level: "error",
-                    message: `Server Function cannot call Client Function "${call.calleeName}". Move the caller to "use client", remove "use client" from callee, or move shared logic into "use shared".`,
+                    message:
+                      `Server Function cannot call Client Function "${call.calleeName}". Move the caller to "use client", remove "use client" from callee, or move shared logic into "use shared".`,
                     file: classified.info.file,
                     line: call.loc?.line,
                     column: call.loc?.column,
@@ -150,7 +172,9 @@ export function classifyFunctions(
 function isUserModule(source: string): boolean {
   if (source.startsWith("npm:")) return false;
   if (source.startsWith("jsr:")) return false;
-  if (source.startsWith("http://") || source.startsWith("https://")) return false;
+  if (source.startsWith("http://") || source.startsWith("https://")) {
+    return false;
+  }
   if (source.startsWith("node:")) return false;
   if (source.startsWith("@ultimate-js/")) return false;
 
@@ -162,7 +186,10 @@ function isUserModule(source: string): boolean {
 /**
  * Resolve a relative import path to an absolute file path.
  */
-function resolveImportPath(fromFile: string, importSource: string): string | null {
+function resolveImportPath(
+  fromFile: string,
+  importSource: string,
+): string | null {
   if (!importSource.startsWith(".")) return null;
 
   const fromDir = fromFile.substring(0, fromFile.lastIndexOf("/"));

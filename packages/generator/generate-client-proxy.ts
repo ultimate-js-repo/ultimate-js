@@ -30,7 +30,7 @@ export function generateClientProxyCode(
  * Generate a single client proxy file for a specific server module.
  */
 export function generateSingleProxyCode(
-  fileName: string,
+  _fileName: string,
   serverFunctions: ClassifiedFunction[],
 ): string {
   return generateClientProxyCode(serverFunctions);

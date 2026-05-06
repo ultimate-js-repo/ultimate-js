@@ -29,14 +29,14 @@ const ansi = {
 };
 
 const S = {
-  pointer: ansi.cyan("\u276f"),       // ❯
-  radio:   ansi.cyan("\u25c9"),       // ◉
-  dot:     ansi.dim("\u25cb"),        // ○
-  check:   ansi.green("\u2714"),      // ✔
-  bar:     ansi.dim("\u2502"),        // │
-  corner:  ansi.dim("\u2514"),        // └
-  top:     ansi.green("\u25c6"),      // ◆
-  topDone: ansi.green("\u25c7"),      // ◇
+  pointer: ansi.cyan("\u276f"), // ❯
+  radio: ansi.cyan("\u25c9"), // ◉
+  dot: ansi.dim("\u25cb"), // ○
+  check: ansi.green("\u2714"), // ✔
+  bar: ansi.dim("\u2502"), // │
+  corner: ansi.dim("\u2514"), // └
+  top: ansi.green("\u25c6"), // ◆
+  topDone: ansi.green("\u25c7"), // ◇
 };
 
 // ── Raw-mode key reader ─────────────────────────────────
@@ -59,7 +59,11 @@ export async function selectPrompt<T extends string>(
 ): Promise<T> {
   if (!isTTY) {
     // Non-interactive: use default
-    write(`  ${S.topDone}  ${ansi.bold(label)} ${ansi.dim("·")} ${options[defaultIdx]}\n`);
+    write(
+      `  ${S.topDone}  ${ansi.bold(label)} ${ansi.dim("·")} ${
+        options[defaultIdx]
+      }\n`,
+    );
     return options[defaultIdx];
   }
   let idx = defaultIdx;
@@ -68,7 +72,11 @@ export async function selectPrompt<T extends string>(
     // Line 1: label
     write(ansi.clearLine);
     if (final) {
-      write(`  ${S.topDone}  ${ansi.bold(label)} ${ansi.dim("·")} ${ansi.cyan(options[idx])}\n`);
+      write(
+        `  ${S.topDone}  ${ansi.bold(label)} ${ansi.dim("·")} ${
+          ansi.cyan(options[idx])
+        }\n`,
+      );
       return;
     }
     write(`  ${S.top}  ${ansi.bold(label)}\n`);
@@ -135,7 +143,9 @@ export async function textPrompt(
   defaultValue: string,
 ): Promise<string> {
   if (!isTTY) {
-    write(`  ${S.topDone}  ${ansi.bold(label)} ${ansi.dim("·")} ${defaultValue}\n`);
+    write(
+      `  ${S.topDone}  ${ansi.bold(label)} ${ansi.dim("·")} ${defaultValue}\n`,
+    );
     return defaultValue;
   }
 
@@ -146,7 +156,11 @@ export async function textPrompt(
     write(ansi.clearLine);
     if (final) {
       const display = value || defaultValue;
-      write(`  ${S.topDone}  ${ansi.bold(label)} ${ansi.dim("·")} ${ansi.cyan(display)}\n`);
+      write(
+        `  ${S.topDone}  ${ansi.bold(label)} ${ansi.dim("·")} ${
+          ansi.cyan(display)
+        }\n`,
+      );
       return;
     }
     write(`  ${S.top}  ${ansi.bold(label)}\n`);

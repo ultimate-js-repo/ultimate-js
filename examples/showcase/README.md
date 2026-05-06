@@ -1,14 +1,19 @@
 # Ultimate.js Showcase
 
-A polished demo of the Ultimate.js framework featuring a dark-themed landing page with interactive components.
+A polished demo of the Ultimate.js framework featuring a dark-themed landing
+page with interactive components.
 
 ## Features Demonstrated
 
 - **File-based routing** — `app/page.tsx` maps to `/`
-- **Root layout** — `app/layout.tsx` provides navigation, styles, and document head
-- **Server functions** — `getRandomUser()`, `incrementCounter()` run on the server
-- **Client components** — `CounterButton`, `UserCard` use `"use client"` directive
-- **Transparent RPC** — client imports server functions directly; the compiler handles the rest
+- **Root layout** — `app/layout.tsx` provides navigation, styles, and document
+  head
+- **Server functions** — `getRandomUser()`, `incrementCounter()` run on the
+  server
+- **Client components** — `CounterButton`, `UserCard` use `"use client"`
+  directive
+- **Transparent RPC** — client imports server functions directly; the compiler
+  handles the rest
 
 ## Run
 

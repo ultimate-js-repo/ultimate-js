@@ -15,7 +15,8 @@ export interface DocumentHead {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /**
@@ -27,7 +28,8 @@ export function renderDocument(head: DocumentHead = {}): string {
 
   let h = "";
   h += `\n  <meta charset="UTF-8" />`;
-  h += `\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />`;
+  h +=
+    `\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />`;
   h += `\n  <title>${escapeHtml(title)}</title>`;
 
   if (head.meta) {

@@ -9,18 +9,24 @@ type LinkProps = {
   style?: React.CSSProperties;
 };
 
-export function Link({ href, children, className, target, rel, style }: LinkProps): React.ReactElement {
-  const isExternal = href.startsWith("http://") || href.startsWith("https://") || href.startsWith("//");
+export function Link(
+  { href, children, className, target, rel, style }: LinkProps,
+): React.ReactElement {
+  const isExternal = href.startsWith("http://") ||
+    href.startsWith("https://") || href.startsWith("//");
 
   const onClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {
-      if (isExternal || target === "_blank" || e.metaKey || e.ctrlKey || e.shiftKey) {
+      if (
+        isExternal || target === "_blank" || e.metaKey || e.ctrlKey ||
+        e.shiftKey
+      ) {
         return;
       }
       e.preventDefault();
 
-      window.history.pushState(null, "", href);
-      window.dispatchEvent(new PopStateEvent("popstate"));
+      globalThis.history.pushState(null, "", href);
+      globalThis.dispatchEvent(new PopStateEvent("popstate"));
     },
     [href, isExternal, target],
   );

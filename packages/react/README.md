@@ -12,7 +12,7 @@ React runtime components for Ultimate.js.
 ## Usage
 
 ```tsx
-import { Router, Link, useRouteParams } from "@ultimate-js/react";
+import { Link, Router, useRouteParams } from "@ultimate-js/react";
 
 function UserPage() {
   const { id } = useRouteParams();

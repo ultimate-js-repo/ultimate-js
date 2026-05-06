@@ -1,22 +1,36 @@
 import type {
-  ParserAdapter,
-  ParsedModule,
-  ImportRecord,
-  FunctionRecord,
   CallRecord,
+  FunctionRecord,
+  ImportRecord,
+  ParsedModule,
+  ParserAdapter,
 } from "./parser-types.ts";
 
 // ── Minimal SWC AST interfaces ──────────────────────────
 
-interface SwcSpan { start: number; end: number }
+interface SwcSpan {
+  start: number;
+  end: number;
+}
 
-interface SwcNode { type: string; span?: SwcSpan; [key: string]: unknown }
+interface SwcNode {
+  type: string;
+  span?: SwcSpan;
+  [key: string]: unknown;
+}
 
-interface SwcModule { body: SwcNode[] }
+interface SwcModule {
+  body: SwcNode[];
+}
 
-interface SwcIdentifier extends SwcNode { type: "Identifier"; value: string }
+interface SwcIdentifier extends SwcNode {
+  type: "Identifier";
+  value: string;
+}
 
-interface SwcParam extends SwcNode { pat: SwcNode & { span?: SwcSpan } }
+interface SwcParam extends SwcNode {
+  pat: SwcNode & { span?: SwcSpan };
+}
 
 interface SwcFnLike extends SwcNode {
   identifier?: SwcIdentifier;
@@ -42,20 +56,26 @@ interface SwcVarDeclarator extends SwcNode {
 
 // ── Lazy SWC loader ─────────────────────────────────────
 
-let parseSync: ((code: string, opts: Record<string, unknown>) => SwcModule) | null = null;
+let parseSync:
+  | ((code: string, opts: Record<string, unknown>) => SwcModule)
+  | null = null;
 
 /**
  * SWC parser adapter.
  * Lazily loads @swc/wasm on first use.
  */
 export class SwcParserAdapter implements ParserAdapter {
-  async parseModule(input: { file: string; code: string }): Promise<ParsedModule> {
+  async parseModule(
+    input: { file: string; code: string },
+  ): Promise<ParsedModule> {
     if (!parseSync) {
       const swc = await import("@swc/wasm") as Record<string, unknown>;
       if (typeof swc.default === "function") {
         await (swc.default as () => Promise<void>)();
       }
-      const fn = (swc.parseSync ?? (swc.default as Record<string, unknown>)?.parseSync) as typeof parseSync;
+      const fn = (swc.parseSync ??
+        (swc.default as Record<string, unknown>)
+          ?.parseSync) as typeof parseSync;
       if (!fn) throw new Error("@swc/wasm does not export parseSync");
       parseSync = fn;
     }
@@ -79,10 +99,18 @@ export class SwcParserAdapter implements ParserAdapter {
           imports.push(parseImport(item as SwcImportDecl));
           break;
         case "ExportDeclaration":
-          collectExportDecl((item as unknown as { declaration: SwcNode }).declaration, code, functions);
+          collectExportDecl(
+            (item as unknown as { declaration: SwcNode }).declaration,
+            code,
+            functions,
+          );
           break;
         case "ExportDefaultDeclaration":
-          collectDefaultDecl((item as unknown as { decl: SwcFnLike }).decl, code, functions);
+          collectDefaultDecl(
+            (item as unknown as { decl: SwcFnLike }).decl,
+            code,
+            functions,
+          );
           break;
         case "ExportDefaultExpression": {
           const expr = (item as unknown as { expression: SwcNode }).expression;
@@ -110,12 +138,18 @@ function detectDirectives(code: string): ("client" | "shared")[] {
   let t = code.trimStart();
   while (t.startsWith("//")) {
     const nl = t.indexOf("\n");
-    if (nl === -1) { t = ""; break; }
+    if (nl === -1) {
+      t = "";
+      break;
+    }
     t = t.substring(nl + 1).trimStart();
   }
   while (t.startsWith("/*")) {
     const end = t.indexOf("*/");
-    if (end === -1) { t = ""; break; }
+    if (end === -1) {
+      t = "";
+      break;
+    }
     t = t.substring(end + 2).trimStart();
   }
   if (/^["']use client["']\s*;?/.test(t)) return ["client"];
@@ -184,17 +218,26 @@ function walk(node: SwcNode, visit: (n: SwcNode) => void): void {
   for (const v of Object.values(node)) {
     if (Array.isArray(v)) {
       for (const item of v) {
-        if (item && typeof item === "object" && typeof (item as SwcNode).type === "string") {
+        if (
+          item && typeof item === "object" &&
+          typeof (item as SwcNode).type === "string"
+        ) {
           walk(item as SwcNode, visit);
         }
       }
-    } else if (v && typeof v === "object" && typeof (v as SwcNode).type === "string") {
+    } else if (
+      v && typeof v === "object" && typeof (v as SwcNode).type === "string"
+    ) {
       walk(v as SwcNode, visit);
     }
   }
 }
 
-function collectExportDecl(decl: SwcNode, code: string, out: FunctionRecord[]): void {
+function collectExportDecl(
+  decl: SwcNode,
+  code: string,
+  out: FunctionRecord[],
+): void {
   if (!decl) return;
   if (decl.type === "FunctionDeclaration") {
     const fn = decl as SwcFnLike;
@@ -208,10 +251,19 @@ function collectExportDecl(decl: SwcNode, code: string, out: FunctionRecord[]): 
       calls: collectCalls(fn.body),
     });
   } else if (decl.type === "VariableDeclaration") {
-    for (const d of ((decl as unknown as { declarations: SwcVarDeclarator[] }).declarations ?? [])) {
+    for (
+      const d of ((decl as unknown as { declarations: SwcVarDeclarator[] })
+        .declarations ?? [])
+    ) {
       const init = d.init;
-      if (init && (init.type === "ArrowFunctionExpression" || init.type === "FunctionExpression")) {
-        const name = d.id.type === "Identifier" ? (d.id as SwcIdentifier).value : undefined;
+      if (
+        init &&
+        (init.type === "ArrowFunctionExpression" ||
+          init.type === "FunctionExpression")
+      ) {
+        const name = d.id.type === "Identifier"
+          ? (d.id as SwcIdentifier).value
+          : undefined;
         if (!name) continue;
         out.push({
           name,
@@ -225,9 +277,15 @@ function collectExportDecl(decl: SwcNode, code: string, out: FunctionRecord[]): 
   }
 }
 
-function collectDefaultDecl(decl: SwcFnLike, code: string, out: FunctionRecord[]): void {
+function collectDefaultDecl(
+  decl: SwcFnLike,
+  code: string,
+  out: FunctionRecord[],
+): void {
   if (!decl) return;
-  if (decl.type === "FunctionExpression" || decl.type === "FunctionDeclaration") {
+  if (
+    decl.type === "FunctionExpression" || decl.type === "FunctionDeclaration"
+  ) {
     const name = decl.identifier?.value ?? "default";
     out.push({
       name,

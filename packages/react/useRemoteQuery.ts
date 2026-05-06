@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function useRemoteQuery<TArgs extends unknown[], TResult>(
   fn: (...args: TArgs) => Promise<TResult>,

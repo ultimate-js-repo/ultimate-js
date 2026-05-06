@@ -28,4 +28,6 @@ export type RemoteFunctionFailure = {
   };
 };
 
-export type RemoteFunctionResult = RemoteFunctionSuccess | RemoteFunctionFailure;
+export type RemoteFunctionResult =
+  | RemoteFunctionSuccess
+  | RemoteFunctionFailure;

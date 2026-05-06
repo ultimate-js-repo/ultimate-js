@@ -1,7 +1,7 @@
 import { relative } from "@std/path";
 import { functionFingerprint } from "@ultimate-js/core";
 import type { ModuleDirective } from "./source-kind.ts";
-import type { ParsedModule, ParserAdapter } from "./parser-types.ts";
+import type { ParsedModule } from "./parser-types.ts";
 
 /**
  * Information about a user-defined function found in source code.
@@ -49,12 +49,11 @@ export function analyzeModule(
   appDir?: string,
 ): ModuleAnalysis {
   // Derive directive
-  const directive: ModuleDirective =
-    parsed.directives.includes("client")
-      ? "client"
-      : parsed.directives.includes("shared")
-        ? "shared"
-        : "server";
+  const directive: ModuleDirective = parsed.directives.includes("client")
+    ? "client"
+    : parsed.directives.includes("shared")
+    ? "shared"
+    : "server";
 
   // Module path relative to appDir, without extension
   const modulePath = appDir
@@ -79,7 +78,9 @@ export function analyzeModule(
       file: filePath,
       isDefaultExport: fn.isDefaultExport,
       isRouteDefaultExport: fn.isDefaultExport && isRouteFile,
-      moduleDirective: fn.isDefaultExport && isRouteFile ? "client" as const : directive,
+      moduleDirective: fn.isDefaultExport && isRouteFile
+        ? "client" as const
+        : directive,
       calls: fn.calls.map((c) => ({
         calleeName: c.calleeName,
         source: "unknown" as const,

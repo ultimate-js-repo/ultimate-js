@@ -24,10 +24,16 @@ export class RspackBundler implements BundlerAdapter {
     projectRoot: string;
   }): Promise<void> {
     const mod = await import("@rspack/core") as Record<string, unknown>;
-    const rspack = (mod.rspack ?? (mod.default as Record<string, unknown>)?.rspack) as RspackFn;
+    const rspack = (mod.rspack ??
+      (mod.default as Record<string, unknown>)?.rspack) as RspackFn;
 
-    const outDir = options.outFile.substring(0, options.outFile.lastIndexOf("/"));
-    const outFilename = options.outFile.substring(options.outFile.lastIndexOf("/") + 1);
+    const outDir = options.outFile.substring(
+      0,
+      options.outFile.lastIndexOf("/"),
+    );
+    const outFilename = options.outFile.substring(
+      options.outFile.lastIndexOf("/") + 1,
+    );
     const aliases = await loadAliases(options.projectRoot);
 
     return new Promise<void>((resolve, reject) => {
@@ -59,7 +65,10 @@ export class RspackBundler implements BundlerAdapter {
       });
 
       compiler.run((err, stats) => {
-        if (err) { reject(err); return; }
+        if (err) {
+          reject(err);
+          return;
+        }
         if (stats?.hasErrors()) {
           const info = stats.toJson({ errors: true });
           const messages = (info.errors ?? []).map((e) => e.message).join("\n");
@@ -72,10 +81,18 @@ export class RspackBundler implements BundlerAdapter {
   }
 }
 
-async function loadAliases(projectRoot: string): Promise<Record<string, string>> {
+async function loadAliases(
+  projectRoot: string,
+): Promise<Record<string, string>> {
   const aliases: Record<string, string> = {};
 
-  for (const dir of [projectRoot, join(projectRoot, "../.."), join(projectRoot, "..")]) {
+  for (
+    const dir of [
+      projectRoot,
+      join(projectRoot, "../.."),
+      join(projectRoot, ".."),
+    ]
+  ) {
     try {
       const raw = await Deno.readTextFile(join(dir, "deno.json"));
       const cfg = JSON.parse(raw) as { imports?: Record<string, string> };
@@ -84,7 +101,10 @@ async function loadAliases(projectRoot: string): Promise<Record<string, string>>
           if (value.startsWith("./") || value.startsWith("../")) {
             aliases[key] = join(dir, value);
           } else if (value.startsWith("npm:")) {
-            aliases[key] = value.replace(/^npm:/, "").replace(/@[\d^~>=<.*]+$/, "");
+            aliases[key] = value.replace(/^npm:/, "").replace(
+              /@[\d^~>=<.*]+$/,
+              "",
+            );
           }
         }
       }

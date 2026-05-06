@@ -18,26 +18,42 @@ const MIME_TYPES: Record<string, string> = {
   ".eot": "application/vnd.ms-fontobject",
 };
 
-export function createStaticHandler(rootDir: string): (request: Request, pathname: string) => Promise<Response | null> {
-  return async (_request: Request, pathname: string): Promise<Response | null> => {
+export function createStaticHandler(
+  rootDir: string,
+): (request: Request, pathname: string) => Promise<Response | null> {
+  return async (
+    _request: Request,
+    pathname: string,
+  ): Promise<Response | null> => {
     try {
       const filePath = join(rootDir, pathname);
       if (!filePath.startsWith(rootDir)) return null;
 
       const file = await Deno.open(filePath, { read: true });
       const stat = await file.stat();
-      if (!stat.isFile) { file.close(); return null; }
+      if (!stat.isFile) {
+        file.close();
+        return null;
+      }
 
       const ext = filePath.substring(filePath.lastIndexOf("."));
       const contentType = MIME_TYPES[ext] || "application/octet-stream";
       return new Response(file.readable, {
-        headers: { "Content-Type": contentType, "Content-Length": String(stat.size) },
+        headers: {
+          "Content-Type": contentType,
+          "Content-Length": String(stat.size),
+        },
       });
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   };
 }
 
-export function serveStaticFile(filePath: string, contentType?: string): Response {
+export function serveStaticFile(
+  filePath: string,
+  contentType?: string,
+): Response {
   const content = Deno.readTextFileSync(filePath);
   return new Response(content, {
     headers: { "Content-Type": contentType || "text/plain; charset=utf-8" },

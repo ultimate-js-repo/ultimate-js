@@ -156,6 +156,8 @@ export const head: DocumentHead = {
   `],
 };
 
-export default function Layout({ children }: { children: React.ReactNode }): React.ReactElement {
+export default function Layout(
+  { children }: { children: React.ReactNode },
+): React.ReactElement {
   return <>{children}</>;
 }

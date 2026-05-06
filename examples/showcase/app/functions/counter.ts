@@ -1,15 +1,15 @@
 let count = 0;
 
-export async function incrementCounter() {
+export function incrementCounter() {
   count += 1;
   return count;
 }
 
-export async function decrementCounter() {
+export function decrementCounter() {
   count -= 1;
   return count;
 }
 
-export async function getCounter() {
+export function getCounter() {
   return count;
 }

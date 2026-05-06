@@ -3,7 +3,10 @@ import { createRpcHandler } from "@ultimate-js/rpc-server";
 
 /** Minimal Hono-compatible app interface (avoids depending on Hono types). */
 interface HonoLike {
-  post(path: string, handler: (c: HonoContext) => Promise<Response> | Response): void;
+  post(
+    path: string,
+    handler: (c: HonoContext) => Promise<Response> | Response,
+  ): void;
 }
 
 interface HonoContext {

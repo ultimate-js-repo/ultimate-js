@@ -8,7 +8,10 @@ interface ErrorLike {
   code?: string;
 }
 
-export function serializeError(error: unknown, dev: boolean): RemoteFunctionFailure["error"] {
+export function serializeError(
+  error: unknown,
+  dev: boolean,
+): RemoteFunctionFailure["error"] {
   if (error instanceof Error) {
     const e = error as Error & Partial<ErrorLike>;
     const result: RemoteFunctionFailure["error"] = {

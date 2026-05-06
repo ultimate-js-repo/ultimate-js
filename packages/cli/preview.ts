@@ -7,7 +7,10 @@ interface HonoContext {
   req: { raw: Request; param(name: string): string; url: string };
 }
 
-export async function preview(projectRoot: string, config: ResolvedConfig): Promise<void> {
+export async function preview(
+  projectRoot: string,
+  config: ResolvedConfig,
+): Promise<void> {
   console.log("Starting Ultimate.js preview server...");
   console.log(`  Project: ${projectRoot}`);
 
@@ -21,7 +24,14 @@ export async function preview(projectRoot: string, config: ResolvedConfig): Prom
 
   let serverManifest: ServerManifest = {};
   try {
-    const manifestPath = join(projectRoot, "dist", "server", ".ultimate", "generated", "server-manifest.ts");
+    const manifestPath = join(
+      projectRoot,
+      "dist",
+      "server",
+      ".ultimate",
+      "generated",
+      "server-manifest.ts",
+    );
     const manifestModule = await runtimeImport(manifestPath);
     serverManifest = manifestModule.serverManifest as ServerManifest;
   } catch {
@@ -53,6 +63,10 @@ export async function preview(projectRoot: string, config: ResolvedConfig): Prom
     }
   });
 
-  console.log(`\nPreview server running at http://${host === "0.0.0.0" ? "localhost" : host}:${port}`);
+  console.log(
+    `\nPreview server running at http://${
+      host === "0.0.0.0" ? "localhost" : host
+    }:${port}`,
+  );
   Deno.serve({ port, hostname: host }, app.fetch);
 }

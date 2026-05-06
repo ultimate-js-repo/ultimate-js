@@ -1,4 +1,7 @@
-import type { RemoteFunctionCalling, RemoteFunctionResult } from "@ultimate-js/protocol";
+import type {
+  RemoteFunctionCalling,
+  RemoteFunctionResult,
+} from "@ultimate-js/protocol";
 import { getRemoteEndpoint } from "./config.ts";
 
 export async function remoteFunctionCall<T>(
@@ -21,7 +24,9 @@ export async function remoteFunctionCall<T>(
   });
 
   if (!response.ok) {
-    throw new Error(`RPC request failed with status ${response.status}: ${response.statusText}`);
+    throw new Error(
+      `RPC request failed with status ${response.status}: ${response.statusText}`,
+    );
   }
 
   const result: RemoteFunctionResult = await response.json();

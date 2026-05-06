@@ -1,7 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { incrementCounter, decrementCounter, getCounter } from "../functions/counter.ts";
+import React, { useEffect, useState } from "react";
+import {
+  decrementCounter,
+  getCounter,
+  incrementCounter,
+} from "../functions/counter.ts";
 
 export function CounterButton(): React.ReactElement {
   const [count, setCount] = useState<number | null>(null);
@@ -36,21 +40,34 @@ export function CounterButton(): React.ReactElement {
       </div>
       <div className="demo-card-body">
         <div className="counter-display">
-          <button className="counter-btn" onClick={handleDecrement} disabled={loading}>
+          <button
+            type="button"
+            className="counter-btn"
+            onClick={handleDecrement}
+            disabled={loading}
+          >
             -
           </button>
-          <div className={count === null ? "counter-value counter-value--loading" : "counter-value"}>
+          <div
+            className={count === null
+              ? "counter-value counter-value--loading"
+              : "counter-value"}
+          >
             {count === null ? "--" : count}
           </div>
-          <button className="counter-btn" onClick={handleIncrement} disabled={loading}>
+          <button
+            type="button"
+            className="counter-btn"
+            onClick={handleIncrement}
+            disabled={loading}
+          >
             +
           </button>
         </div>
         <div className="counter-info">
           {loading
             ? "Calling server..."
-            : "Each click triggers a server function call"
-          }
+            : "Each click triggers a server function call"}
         </div>
       </div>
     </div>

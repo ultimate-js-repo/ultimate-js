@@ -24,7 +24,10 @@ export function generateServerManifestCode(
   }
 
   // Generate imports per file
-  const importMap = new Map<string, { type: "default" | "named"; name?: string }>();
+  const importMap = new Map<
+    string,
+    { type: "default" | "named"; name?: string }
+  >();
   let importIndex = 0;
 
   for (const [file, fns] of byFile) {
@@ -39,14 +42,20 @@ export function generateServerManifestCode(
       lines.push(`import ${modName} from ${JSON.stringify(cleanPath)}`);
       importMap.set(file, { type: "default", name: modName });
     } else {
-      lines.push(`import { ${uniqueNames.join(", ")} } from ${JSON.stringify(cleanPath)}`);
+      lines.push(
+        `import { ${uniqueNames.join(", ")} } from ${
+          JSON.stringify(cleanPath)
+        }`,
+      );
       importMap.set(file, { type: "named" });
     }
     importIndex++;
   }
 
   lines.push("");
-  lines.push("export const serverManifest: Record<string, (...args: unknown[]) => unknown | Promise<unknown>> = {");
+  lines.push(
+    "export const serverManifest: Record<string, (...args: unknown[]) => unknown | Promise<unknown>> = {",
+  );
 
   for (const [file, fns] of byFile) {
     const impInfo = importMap.get(file)!;

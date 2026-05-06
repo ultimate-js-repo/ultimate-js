@@ -16,6 +16,9 @@ export function hashId(input: string): string {
  *
  * Hash input: "functions/user/getUser(id: string)"
  */
-export function functionFingerprint(modulePath: string, signature: string): string {
+export function functionFingerprint(
+  modulePath: string,
+  signature: string,
+): string {
   return hashId(`${modulePath}/${signature}`);
 }

@@ -5,26 +5,28 @@ import babelTraverse from "@babel/traverse";
 // @ts-expect-error CJS default export mismatch
 import babelGenerate from "@babel/generator";
 import type {
-  ParserAdapter,
-  ParsedModule,
-  ImportRecord,
-  FunctionRecord,
   CallRecord,
+  FunctionRecord,
+  ImportRecord,
+  ParsedModule,
+  ParserAdapter,
 } from "./parser-types.ts";
 
 // Babel CJS default-export shim
-const traverse = ((babelTraverse as Record<string, unknown>).default ?? babelTraverse) as (
-  ast: File,
-  visitors: Record<string, (path: BabelPath) => void>,
-  scope?: unknown,
-  state?: unknown,
-  parentPath?: unknown,
-) => void;
+const traverse =
+  ((babelTraverse as Record<string, unknown>).default ?? babelTraverse) as (
+    ast: File,
+    visitors: Record<string, (path: BabelPath) => void>,
+    scope?: unknown,
+    state?: unknown,
+    parentPath?: unknown,
+  ) => void;
 
-const generate = ((babelGenerate as Record<string, unknown>).default ?? babelGenerate) as (
-  node: BabelNode,
-  options?: { compact?: boolean },
-) => { code: string };
+const generate =
+  ((babelGenerate as Record<string, unknown>).default ?? babelGenerate) as (
+    node: BabelNode,
+    options?: { compact?: boolean },
+  ) => { code: string };
 
 // ── Minimal Babel AST interfaces ────────────────────────
 
@@ -37,7 +39,9 @@ interface BabelPath {
   node: BabelNode & Record<string, unknown>;
 }
 
-interface BabelLoc { start: { line: number; column: number } }
+interface BabelLoc {
+  start: { line: number; column: number };
+}
 
 function nodeParams(fn: BabelNode): BabelNode[] {
   return (fn as { params?: BabelNode[] }).params ?? [];
@@ -76,7 +80,9 @@ function collectCalls(fnNode: BabelNode): CallRecord[] {
             const loc = (callee as unknown as { loc?: BabelLoc }).loc;
             calls.push({
               calleeName: (callee as unknown as { name: string }).name,
-              loc: loc ? { line: loc.start.line, column: loc.start.column } : undefined,
+              loc: loc
+                ? { line: loc.start.line, column: loc.start.column }
+                : undefined,
             });
           }
         },
@@ -95,12 +101,18 @@ function detectDirectives(code: string): ("client" | "shared")[] {
   let t = code.trimStart();
   while (t.startsWith("//")) {
     const nl = t.indexOf("\n");
-    if (nl === -1) { t = ""; break; }
+    if (nl === -1) {
+      t = "";
+      break;
+    }
     t = t.substring(nl + 1).trimStart();
   }
   while (t.startsWith("/*")) {
     const end = t.indexOf("*/");
-    if (end === -1) { t = ""; break; }
+    if (end === -1) {
+      t = "";
+      break;
+    }
     t = t.substring(end + 2).trimStart();
   }
   if (/^["']use client["']\s*;?/.test(t)) return ["client"];
@@ -133,13 +145,16 @@ export class BabelParserAdapter implements ParserAdapter {
         const rec: ImportRecord = { source, names: [] };
         const specifiers = (path.node.specifiers as BabelNode[]) ?? [];
         for (const spec of specifiers) {
-          const local = (spec as unknown as { local: { name: string } }).local.name;
+          const local =
+            (spec as unknown as { local: { name: string } }).local.name;
           if (spec.type === "ImportDefaultSpecifier") {
             rec.defaultImport = local;
           } else if (spec.type === "ImportNamespaceSpecifier") {
             rec.namespaceImport = local;
           } else if (spec.type === "ImportSpecifier") {
-            const imported = ((spec as unknown as { imported?: { name: string } }).imported?.name) ?? local;
+            const imported =
+              ((spec as unknown as { imported?: { name: string } }).imported
+                ?.name) ?? local;
             rec.names.push({ local, imported });
           }
         }
@@ -148,8 +163,13 @@ export class BabelParserAdapter implements ParserAdapter {
 
       ExportDefaultDeclaration(path: BabelPath) {
         const decl = path.node.declaration as BabelNode;
-        if (decl.type === "FunctionDeclaration" || decl.type === "ArrowFunctionExpression") {
-          const name = ((decl as unknown as { id?: { name: string } }).id?.name) ?? "default";
+        if (
+          decl.type === "FunctionDeclaration" ||
+          decl.type === "ArrowFunctionExpression"
+        ) {
+          const name =
+            ((decl as unknown as { id?: { name: string } }).id?.name) ??
+              "default";
           functions.push({
             name,
             exportName: "default",
@@ -184,12 +204,19 @@ export class BabelParserAdapter implements ParserAdapter {
             calls: collectCalls(decl),
           });
         } else if (decl.type === "VariableDeclaration") {
-          const declarations = (decl as unknown as { declarations: BabelNode[] }).declarations;
+          const declarations =
+            (decl as unknown as { declarations: BabelNode[] }).declarations;
           for (const v of declarations) {
             const init = (v as unknown as { init?: BabelNode }).init;
-            if (init && (init.type === "ArrowFunctionExpression" || init.type === "FunctionExpression")) {
+            if (
+              init &&
+              (init.type === "ArrowFunctionExpression" ||
+                init.type === "FunctionExpression")
+            ) {
               const id = (v as unknown as { id: BabelNode }).id;
-              const name = id.type === "Identifier" ? (id as unknown as { value?: string; name?: string }).name : undefined;
+              const name = id.type === "Identifier"
+                ? (id as unknown as { value?: string; name?: string }).name
+                : undefined;
               if (!name) continue;
               functions.push({
                 name,

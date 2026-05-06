@@ -4,8 +4,10 @@ RPC protocol types and helpers for Ultimate.js.
 
 ## Exports
 
-- **Types** — `RemoteFunctionCalling`, `RemoteFunctionSuccess`, `RemoteFunctionFailure`, `RemoteFunctionResult`
-- **Helpers** — `createRemoteCall()`, `createSuccessResult()`, `createFailureResult()`, `validateRemoteCall()`
+- **Types** — `RemoteFunctionCalling`, `RemoteFunctionSuccess`,
+  `RemoteFunctionFailure`, `RemoteFunctionResult`
+- **Helpers** — `createRemoteCall()`, `createSuccessResult()`,
+  `createFailureResult()`, `validateRemoteCall()`
 - **Error serialization** — `serializeError()`
 
 ## Protocol

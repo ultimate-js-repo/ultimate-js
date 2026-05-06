@@ -84,7 +84,7 @@ export async function create(name: string): Promise<void> {
   step("");
 
   const opts: ProjectOptions = { name, parser, bundler, port, endpoint };
-  const loader = await createTemplateLoader();
+  const loader = createTemplateLoader();
 
   const configDst = join(dest, "ultimate.config.ts");
   await ensureDir(dest);
@@ -121,7 +121,7 @@ function normalizeEndpoint(value: string): string {
 
 type Loader = (subpath: string) => Promise<string>;
 
-async function createTemplateLoader(): Promise<Loader> {
+function createTemplateLoader(): Loader {
   step("Fetching template from ultimate-js-repo/ultimate-js-empty");
 
   return async (subpath: string) => {

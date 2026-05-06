@@ -1,3 +1,4 @@
+// deno-lint-ignore-file jsx-curly-braces
 import React, { useState } from "react";
 import { CounterButton } from "./components/CounterButton.tsx";
 import { UserCard } from "./components/UserCard.tsx";
@@ -95,9 +96,15 @@ export default function Page(): React.ReactElement {
             Ultimate.js
           </a>
           <ul className="nav-links">
-            <li><a href="#features">Features</a></li>
-            <li><a href="#demo">Demo</a></li>
-            <li><a href="#code">Code</a></li>
+            <li>
+              <a href="#features">Features</a>
+            </li>
+            <li>
+              <a href="#demo">Demo</a>
+            </li>
+            <li>
+              <a href="#code">Code</a>
+            </li>
           </ul>
         </div>
       </nav>
@@ -110,8 +117,8 @@ export default function Page(): React.ReactElement {
         </div>
         <h1 className="hero-title">Ultimate.js</h1>
         <p className="hero-subtitle">
-          Full-stack Deno framework with transparent server calls.
-          Write server functions, import them in the client — the compiler does the rest.
+          Full-stack Deno framework with transparent server calls. Write server
+          functions, import them in the client — the compiler does the rest.
         </p>
         <div className="hero-techs">
           <span className="tech-badge">Deno 2</span>
@@ -122,15 +129,17 @@ export default function Page(): React.ReactElement {
         </div>
       </section>
 
-      <div className="divider"><hr /></div>
+      <div className="divider">
+        <hr />
+      </div>
 
       {/* ─── Features ─── */}
       <section className="section" id="features">
         <div className="section-label">Features</div>
         <h2 className="section-title">Why Ultimate.js?</h2>
         <p className="section-desc">
-          A self-contained framework that handles routing, code splitting,
-          and server communication — no glue code needed.
+          A self-contained framework that handles routing, code splitting, and
+          server communication — no glue code needed.
         </p>
 
         <div className="features-grid">
@@ -139,7 +148,8 @@ export default function Page(): React.ReactElement {
             <div className="feature-title">Transparent RPC</div>
             <div className="feature-desc">
               Import server functions in client code. The compiler replaces them
-              with type-safe RPC calls automatically. No API routes, no fetch boilerplate.
+              with type-safe RPC calls automatically. No API routes, no fetch
+              boilerplate.
             </div>
           </div>
 
@@ -147,9 +157,9 @@ export default function Page(): React.ReactElement {
             <div className="feature-icon feature-icon--route">{"/"}</div>
             <div className="feature-title">File-Based Routing</div>
             <div className="feature-desc">
-              Drop a .tsx file in app/routes/ and it becomes a page.
-              Dynamic params with [id].tsx, catch-all with [...path].tsx.
-              Built-in SPA navigation.
+              Drop a .tsx file in app/routes/ and it becomes a page. Dynamic
+              params with [id].tsx, catch-all with [...path].tsx. Built-in SPA
+              navigation.
             </div>
           </div>
 
@@ -157,22 +167,25 @@ export default function Page(): React.ReactElement {
             <div className="feature-icon feature-icon--split">{"{ }"}</div>
             <div className="feature-title">Smart Code Classification</div>
             <div className="feature-desc">
-              Functions are classified as client, server, or shared at build time.
-              Server code never reaches the browser. Illegal cross-calls are caught early.
+              Functions are classified as client, server, or shared at build
+              time. Server code never reaches the browser. Illegal cross-calls
+              are caught early.
             </div>
           </div>
         </div>
       </section>
 
-      <div className="divider"><hr /></div>
+      <div className="divider">
+        <hr />
+      </div>
 
       {/* ─── Interactive Demo ─── */}
       <section className="section" id="demo">
         <div className="section-label">Interactive</div>
         <h2 className="section-title">Try It Live</h2>
         <p className="section-desc">
-          These demos call real server functions via RPC.
-          The server state persists across clicks.
+          These demos call real server functions via RPC. The server state
+          persists across clicks.
         </p>
 
         <div className="demo-grid">
@@ -181,23 +194,31 @@ export default function Page(): React.ReactElement {
         </div>
       </section>
 
-      <div className="divider"><hr /></div>
+      <div className="divider">
+        <hr />
+      </div>
 
       {/* ─── Code Example ─── */}
       <section className="code-section" id="code">
         <div className="section-label">How It Works</div>
-        <h2 className="section-title" style={{ marginBottom: 16 }}>The Magic</h2>
+        <h2 className="section-title" style={{ marginBottom: 16 }}>
+          The Magic
+        </h2>
         <p className="section-desc">
-          Write server functions as plain TypeScript. Import them in client code.
-          Ultimate.js handles serialization, transport, and error propagation.
+          Write server functions as plain TypeScript. Import them in client
+          code. Ultimate.js handles serialization, transport, and error
+          propagation.
         </p>
 
         <div className="code-block">
           <div className="code-tabs">
             {codeTabs.map((tab, i) => (
               <button
+                type="button"
                 key={tab.name}
-                className={i === activeTab ? "code-tab code-tab--active" : "code-tab"}
+                className={i === activeTab
+                  ? "code-tab code-tab--active"
+                  : "code-tab"}
                 onClick={() => setActiveTab(i)}
               >
                 {tab.name}

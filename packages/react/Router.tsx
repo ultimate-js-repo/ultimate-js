@@ -1,4 +1,10 @@
-import React, { useState, useEffect, createContext, useContext, useCallback } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import type { RouteRecord, RouteSegment } from "@ultimate-js/router";
 import { matchRoute } from "@ultimate-js/router";
 
@@ -24,8 +30,10 @@ export function useRouteParams(): Record<string, string> {
   return useContext(RouteParamsContext);
 }
 
-export function Router({ routes }: { routes: RouteEntry[] }): React.ReactElement {
-  const [pathname, setPathname] = useState(() => window.location.pathname);
+export function Router(
+  { routes }: { routes: RouteEntry[] },
+): React.ReactElement {
+  const [pathname, setPathname] = useState(() => globalThis.location.pathname);
   const [match, setMatch] = useState<MatchState | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -62,12 +70,12 @@ export function Router({ routes }: { routes: RouteEntry[] }): React.ReactElement
     resolveRoute(pathname);
 
     const handlePopState = (): void => {
-      setPathname(window.location.pathname);
-      resolveRoute(window.location.pathname);
+      setPathname(globalThis.location.pathname);
+      resolveRoute(globalThis.location.pathname);
     };
 
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    globalThis.addEventListener("popstate", handlePopState);
+    return () => globalThis.removeEventListener("popstate", handlePopState);
   }, [pathname, resolveRoute]);
 
   if (loading) {
@@ -75,7 +83,9 @@ export function Router({ routes }: { routes: RouteEntry[] }): React.ReactElement
   }
 
   if (!match) {
-    return React.createElement("div", null,
+    return React.createElement(
+      "div",
+      null,
       React.createElement("h1", null, "404"),
       React.createElement("p", null, "Page not found"),
     );

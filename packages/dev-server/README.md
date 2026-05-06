@@ -1,6 +1,7 @@
 # @ultimate-js/dev-server
 
-Development server for Ultimate.js. Full client build on startup, auto-rebuild on file changes, dual-port architecture.
+Development server for Ultimate.js. Full client build on startup, auto-rebuild
+on file changes, dual-port architecture.
 
 ## Exports
 

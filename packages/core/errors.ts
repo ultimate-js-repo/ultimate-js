@@ -11,17 +11,25 @@ export class UltimateError extends Error {
 }
 
 export class BadRequestError extends UltimateError {
-  constructor(message = "Bad Request") { super(message, 400, "BAD_REQUEST"); }
+  constructor(message = "Bad Request") {
+    super(message, 400, "BAD_REQUEST");
+  }
 }
 
 export class NotFoundError extends UltimateError {
-  constructor(message = "Not Found") { super(message, 404, "NOT_FOUND"); }
+  constructor(message = "Not Found") {
+    super(message, 404, "NOT_FOUND");
+  }
 }
 
 export class ForbiddenError extends UltimateError {
-  constructor(message = "Forbidden") { super(message, 403, "FORBIDDEN"); }
+  constructor(message = "Forbidden") {
+    super(message, 403, "FORBIDDEN");
+  }
 }
 
 export class UnauthorizedError extends UltimateError {
-  constructor(message = "Unauthorized") { super(message, 401, "UNAUTHORIZED"); }
+  constructor(message = "Unauthorized") {
+    super(message, 401, "UNAUTHORIZED");
+  }
 }

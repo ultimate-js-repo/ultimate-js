@@ -1,6 +1,7 @@
 # @ultimate-js/compiler
 
-Compilation orchestrator for Ultimate.js. Ties together route scanning, source analysis, function classification, and code generation.
+Compilation orchestrator for Ultimate.js. Ties together route scanning, source
+analysis, function classification, and code generation.
 
 ## Exports
 
@@ -13,4 +14,5 @@ Compilation orchestrator for Ultimate.js. Ties together route scanning, source a
 scanRoutes → scanSourceFiles → parseModule → analyzeModule → classifyFunctions
 ```
 
-Returns a `CompileResult` with routes, analyses, classified functions, and server function file set.
+Returns a `CompileResult` with routes, analyses, classified functions, and
+server function file set.

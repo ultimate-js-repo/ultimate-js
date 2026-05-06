@@ -1,20 +1,26 @@
 import { join, relative } from "@std/path";
 import type { ResolvedConfig } from "@ultimate-js/core";
 import { compileProject } from "@ultimate-js/compiler";
-import { generateServerManifestCode, generateClientProxyCode } from "@ultimate-js/generator";
 import {
-  bundleClient,
+  generateClientProxyCode,
+  generateServerManifestCode,
+} from "@ultimate-js/generator";
+import {
   buildServer,
-  transformAndCopyAppSources,
-  generateRouteManifestCodeFromTransformed,
-  generateClientEntryCode,
-  generateStaticPaths,
+  bundleClient,
   ensureDir,
+  generateClientEntryCode,
+  generateRouteManifestCodeFromTransformed,
+  generateStaticPaths,
   removeDir,
+  transformAndCopyAppSources,
   writeTextFile,
 } from "@ultimate-js/bundler-deno";
 
-export async function build(projectRoot: string, config: ResolvedConfig): Promise<void> {
+export async function build(
+  projectRoot: string,
+  config: ResolvedConfig,
+): Promise<void> {
   const appDir = join(projectRoot, "app");
   const generatedDir = join(projectRoot, ".ultimate", "generated");
   const transformedDir = join(projectRoot, ".ultimate", "transformed-app");
@@ -45,7 +51,11 @@ export async function build(projectRoot: string, config: ResolvedConfig): Promis
   console.log(`  Found ${result.analyses.length} source file(s)`);
   for (const a of result.analyses) {
     if (a.functions.length > 0) {
-      console.log(`  ${relative(projectRoot, a.file)}: ${a.functions.length} function(s), directive=${a.directive}`);
+      console.log(
+        `  ${
+          relative(projectRoot, a.file)
+        }: ${a.functions.length} function(s), directive=${a.directive}`,
+      );
     }
   }
 
@@ -57,7 +67,10 @@ export async function build(projectRoot: string, config: ResolvedConfig): Promis
   // 5. Generate outputs
   console.log("\n[5/6] Generating build outputs...");
 
-  const serverManifest = generateServerManifestCode(result.serverFunctions, generatedDir);
+  const serverManifest = generateServerManifestCode(
+    result.serverFunctions,
+    generatedDir,
+  );
   await writeTextFile(join(generatedDir, "server-manifest.ts"), serverManifest);
   console.log(`  Generated: server-manifest.ts`);
 
@@ -68,21 +81,33 @@ export async function build(projectRoot: string, config: ResolvedConfig): Promis
 
   console.log("  Transforming client-side source files...");
   await transformAndCopyAppSources(
-    appDir, transformedDir, result.analyses, result.serverFunctionFiles, proxyFilePath,
+    appDir,
+    transformedDir,
+    result.analyses,
+    result.serverFunctionFiles,
+    proxyFilePath,
   );
 
   // Map route files and layout files to transformed paths
   const transformedRoutes = result.routes.map((r) => ({
     ...r,
     file: join(transformedDir, relative(appDir, r.file)),
-    layoutFiles: r.layoutFiles.map((lf) => join(transformedDir, relative(appDir, lf))),
+    layoutFiles: r.layoutFiles.map((lf) =>
+      join(transformedDir, relative(appDir, lf))
+    ),
   }));
-  const routeManifest = generateRouteManifestCodeFromTransformed(transformedRoutes, generatedDir);
+  const routeManifest = generateRouteManifestCodeFromTransformed(
+    transformedRoutes,
+    generatedDir,
+  );
   await writeTextFile(join(generatedDir, "route-manifest.ts"), routeManifest);
   console.log(`  Generated: route-manifest.ts`);
 
   const clientEntry = generateClientEntryCode(config.client.rpcBase);
-  await writeTextFile(join(projectRoot, ".ultimate", "client-entry.tsx"), clientEntry);
+  await writeTextFile(
+    join(projectRoot, ".ultimate", "client-entry.tsx"),
+    clientEntry,
+  );
   console.log(`  Generated: client-entry.tsx`);
 
   // 6. Build bundles

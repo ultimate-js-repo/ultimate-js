@@ -3,17 +3,16 @@ import type { ResolvedConfig } from "@ultimate-js/core";
 import { runtimeImport } from "@ultimate-js/core";
 import { compileProject } from "@ultimate-js/compiler";
 import {
-  generateServerManifestCode,
   generateClientProxyCode,
+  generateServerManifestCode,
 } from "@ultimate-js/generator";
 import {
   bundleClient,
-  transformAndCopyAppSources,
-  generateRouteManifestCodeFromTransformed,
-  generateClientEntryCode,
-  hasLayoutFile,
   ensureDir,
+  generateClientEntryCode,
+  generateRouteManifestCodeFromTransformed,
   removeDir,
+  transformAndCopyAppSources,
   writeTextFile,
 } from "@ultimate-js/bundler-deno";
 import type { ServerManifest } from "@ultimate-js/rpc-server";
@@ -43,7 +42,14 @@ export async function startDevServer(
 
   // ── Initial build ──
   console.log("\n  Building client...");
-  await fullBuild(projectRoot, appDir, generatedDir, transformedDir, distDir, config);
+  await fullBuild(
+    projectRoot,
+    appDir,
+    generatedDir,
+    transformedDir,
+    distDir,
+    config,
+  );
   console.log("  Build complete.");
 
   // ── Load server manifest for RPC ──
@@ -54,7 +60,7 @@ export async function startDevServer(
   let serverManifest: ServerManifest = {};
   try {
     const manifestModule = await runtimeImport(
-      join(projectRoot, ".ultimate", "generated", "server-manifest.ts")
+      join(projectRoot, ".ultimate", "generated", "server-manifest.ts"),
     );
     serverManifest = manifestModule.serverManifest as ServerManifest;
   } catch {
@@ -89,7 +95,14 @@ export async function startDevServer(
     building = true;
     console.log("\n  File change detected, rebuilding...");
     try {
-      await fullBuild(projectRoot, appDir, generatedDir, transformedDir, distDir, config);
+      await fullBuild(
+        projectRoot,
+        appDir,
+        generatedDir,
+        transformedDir,
+        distDir,
+        config,
+      );
 
       const manifestPath =
         join(projectRoot, ".ultimate", "generated", "server-manifest.ts") +
@@ -179,7 +192,8 @@ async function fullBuild(
   const result = await compileProject({ projectRoot, config });
 
   const serverManifest = generateServerManifestCode(
-    result.serverFunctions, generatedDir,
+    result.serverFunctions,
+    generatedDir,
   );
   await writeTextFile(join(generatedDir, "server-manifest.ts"), serverManifest);
 
@@ -188,22 +202,30 @@ async function fullBuild(
   await writeTextFile(proxyFilePath, clientProxy);
 
   await transformAndCopyAppSources(
-    appDir, transformedDir, result.analyses, result.serverFunctionFiles, proxyFilePath,
+    appDir,
+    transformedDir,
+    result.analyses,
+    result.serverFunctionFiles,
+    proxyFilePath,
   );
 
   const transformedRoutes = result.routes.map((r) => ({
     ...r,
     file: join(transformedDir, relative(appDir, r.file)),
-    layoutFiles: r.layoutFiles.map((lf) => join(transformedDir, relative(appDir, lf))),
+    layoutFiles: r.layoutFiles.map((lf) =>
+      join(transformedDir, relative(appDir, lf))
+    ),
   }));
   const routeManifest = generateRouteManifestCodeFromTransformed(
-    transformedRoutes, generatedDir,
+    transformedRoutes,
+    generatedDir,
   );
   await writeTextFile(join(generatedDir, "route-manifest.ts"), routeManifest);
 
   const clientEntry = generateClientEntryCode(config.client.rpcBase);
   await writeTextFile(
-    join(projectRoot, ".ultimate", "client-entry.tsx"), clientEntry,
+    join(projectRoot, ".ultimate", "client-entry.tsx"),
+    clientEntry,
   );
 
   await bundleClient(projectRoot, distDir, config);

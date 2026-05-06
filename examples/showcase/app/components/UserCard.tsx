@@ -32,34 +32,39 @@ export function UserCard(): React.ReactElement {
       </div>
       <div className="demo-card-body">
         <button
+          type="button"
           className="user-fetch-btn"
           onClick={handleFetch}
           disabled={loading}
         >
-          {loading ? (
-            <span>
-              <span className="loading-spinner" />
-              Fetching...
-            </span>
-          ) : (
-            "Get Random User"
-          )}
+          {loading
+            ? (
+              <span>
+                <span className="loading-spinner" />
+                Fetching...
+              </span>
+            )
+            : (
+              "Get Random User"
+            )}
         </button>
 
-        {user ? (
-          <div className="user-profile">
-            <div className="user-avatar">{user.avatar}</div>
-            <div className="user-info">
-              <div className="user-name">{user.name}</div>
-              <div className="user-meta">{user.email}</div>
-              <div className="user-role">{user.role}</div>
+        {user
+          ? (
+            <div className="user-profile">
+              <div className="user-avatar">{user.avatar}</div>
+              <div className="user-info">
+                <div className="user-name">{user.name}</div>
+                <div className="user-meta">{user.email}</div>
+                <div className="user-role">{user.role}</div>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="user-empty">
-            Click the button to fetch a user from the server
-          </div>
-        )}
+          )
+          : (
+            <div className="user-empty">
+              Click the button to fetch a user from the server
+            </div>
+          )}
       </div>
     </div>
   );

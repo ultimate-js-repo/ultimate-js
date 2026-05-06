@@ -1,6 +1,6 @@
 import { join, relative } from "@std/path";
 import { expandGlob } from "@std/fs";
-import type { RouteSegment, RouteRecord } from "./route-types.ts";
+import type { RouteRecord, RouteSegment } from "./route-types.ts";
 import { routeIdFromFile } from "./route-id.ts";
 
 const PAGE_RE = /^page\.(tsx?|jsx?)$/;
@@ -43,9 +43,11 @@ export async function scanRoutes(appDir: string): Promise<RouteRecord[]> {
   const layouts = new Map<string, string>();
 
   // 1. Collect layout files
-  for await (const entry of expandGlob(join(appDir, "**", "layout.*"), {
-    exclude: ["**/node_modules/**", "**/dist/**", "**/.ultimate/**"],
-  })) {
+  for await (
+    const entry of expandGlob(join(appDir, "**", "layout.*"), {
+      exclude: ["**/node_modules/**", "**/dist/**", "**/.ultimate/**"],
+    })
+  ) {
     const basename = entry.path.split("/").pop() || "";
     if (LAYOUT_RE.test(basename)) {
       const dir = entry.path.substring(0, entry.path.lastIndexOf("/"));
@@ -54,9 +56,11 @@ export async function scanRoutes(appDir: string): Promise<RouteRecord[]> {
   }
 
   // 2. Collect page files
-  for await (const entry of expandGlob(join(appDir, "**", "page.*"), {
-    exclude: ["**/node_modules/**", "**/dist/**", "**/.ultimate/**"],
-  })) {
+  for await (
+    const entry of expandGlob(join(appDir, "**", "page.*"), {
+      exclude: ["**/node_modules/**", "**/dist/**", "**/.ultimate/**"],
+    })
+  ) {
     const basename = entry.path.split("/").pop() || "";
     if (!PAGE_RE.test(basename)) continue;
 
