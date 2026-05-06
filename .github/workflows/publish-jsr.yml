@@ -40,6 +40,17 @@ jobs:
             base="$(git rev-list --max-parents=0 "$head")"
           fi
 
+          jsr_version_status() {
+            local package="$1"
+            local version="$2"
+            local without_scope="${package#@}"
+            local scope="${without_scope%%/*}"
+            local name="${without_scope#*/}"
+
+            curl --retry 3 --retry-all-errors --retry-delay 2 -sS -o /dev/null -w "%{http_code}" \
+              "https://api.jsr.io/scopes/${scope}/packages/${name}/versions/${version}"
+          }
+
           tmp="$(mktemp)"
           for config in packages/*/deno.json; do
             [ -f "$config" ] || continue
@@ -54,7 +65,13 @@ jobs:
                 || true
             )"
 
-            if [ "$old_version" != "$version" ]; then
+            jsr_status="$(jsr_version_status "$name" "$version")"
+            if [ "$jsr_status" != "200" ] && [ "$jsr_status" != "404" ]; then
+              echo "Unexpected JSR API status $jsr_status for $name@$version" >&2
+              exit 1
+            fi
+
+            if [ "$old_version" != "$version" ] || [ "$jsr_status" = "404" ]; then
               jq -cn \
                 --arg dir "$(dirname "$config")" \
                 --arg name "$name" \
@@ -95,11 +112,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if deno info "jsr:${{ matrix.name }}@${{ matrix.version }}" >/dev/null 2>&1; then
+          package="${{ matrix.name }}"
+          without_scope="${package#@}"
+          scope="${without_scope%%/*}"
+          name="${without_scope#*/}"
+
+          jsr_status="$(
+            curl --retry 3 --retry-all-errors --retry-delay 2 -sS -o /dev/null -w "%{http_code}" \
+              "https://api.jsr.io/scopes/${scope}/packages/${name}/versions/${{ matrix.version }}"
+          )"
+
+          if [ "$jsr_status" = "200" ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "${{ matrix.name }}@${{ matrix.version }} already exists on JSR."
-          else
+          elif [ "$jsr_status" = "404" ]; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unexpected JSR API status $jsr_status for ${{ matrix.name }}@${{ matrix.version }}" >&2
+            exit 1
           fi
 
       - name: Publish
