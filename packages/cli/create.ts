@@ -1,5 +1,5 @@
 import { join, resolve } from "@std/path";
-import { ensureDir, exists } from "@std/fs";
+import { ensureDir } from "@std/fs";
 import { intro, outro, selectPrompt, step, textPrompt } from "./tui.ts";
 
 const TEMPLATE_REPO_RAW_URL =
@@ -122,15 +122,6 @@ function normalizeEndpoint(value: string): string {
 type Loader = (subpath: string) => Promise<string>;
 
 async function createTemplateLoader(): Promise<Loader> {
-  const cliDir = new URL(".", import.meta.url).pathname;
-  const localDir = resolve(cliDir, "../../examples/template");
-  if (await exists(join(localDir, "ultimate.config.ts"), { isFile: true })) {
-    return async (subpath: string) => {
-      const file = subpath.replace(/^\.\//, "");
-      return await Deno.readTextFile(join(localDir, file));
-    };
-  }
-
   step("Fetching template from ultimate-js-repo/ultimate-js-empty");
 
   return async (subpath: string) => {

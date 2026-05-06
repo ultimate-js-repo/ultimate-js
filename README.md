@@ -73,7 +73,6 @@ export default defineConfig({
 | `@ultimate-js/bundler-deno` | Client/server build with Deno/rspack |
 | `@ultimate-js/dev-server` | Development server with hot rebuild |
 | `@ultimate-js/cli` | CLI (`create`, `dev`, `build`, `preview`) |
-| `@ultimate-js/template` | Project template for `ultimate create` |
 
 ## License
 
