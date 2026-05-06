@@ -1,9 +1,14 @@
 import { resolveProjectRoot } from "./utils.ts";
 import { loadConfig } from "@ultimate-js/core";
+import {
+  applyDevOverrides,
+  applyServerOverrides,
+  parseCommandOptions,
+} from "./options.ts";
 
 const args = Deno.args;
 const command = args[0];
-const projectName = args[1];
+const commandArgs = args.slice(1);
 
 if (!command) {
   console.log("Ultimate.js CLI");
@@ -18,6 +23,7 @@ if (!command) {
 
 async function main() {
   if (command === "create") {
+    const projectName = commandArgs[0];
     if (!projectName) {
       console.error("Usage: ultimate create <project-name>");
       Deno.exit(1);
@@ -27,25 +33,29 @@ async function main() {
     return;
   }
 
-  const projectRoot = resolveProjectRoot(projectName || ".");
+  const options = parseCommandOptions(commandArgs);
+  const projectRoot = resolveProjectRoot(options.project);
   console.log(`Project root: ${projectRoot}`);
 
-  const config = await loadConfig(projectRoot);
+  const baseConfig = await loadConfig(projectRoot);
 
   switch (command) {
     case "dev": {
       const { dev } = await import("./dev.ts");
-      await dev(projectRoot, config);
+      await dev(projectRoot, applyDevOverrides(baseConfig, options.rest));
       break;
     }
     case "build": {
       const { build } = await import("./build.ts");
-      await build(projectRoot, config);
+      await build(projectRoot, applyServerOverrides(baseConfig, options.rest));
       break;
     }
     case "preview": {
       const { preview } = await import("./preview.ts");
-      await preview(projectRoot, config);
+      await preview(
+        projectRoot,
+        applyServerOverrides(baseConfig, options.rest),
+      );
       break;
     }
     default:

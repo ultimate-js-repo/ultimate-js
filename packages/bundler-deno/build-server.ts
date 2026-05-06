@@ -84,13 +84,91 @@ import { createStaticHandler } from "@ultimate-js/hono";
 import { createRpcHandler } from "@ultimate-js/rpc-server";
 import { serverManifest } from "./.ultimate/generated/server-manifest.ts";
 
+const defaultRuntimeOptions = {
+  port: ${JSON.stringify(port)},
+  host: ${JSON.stringify(host)},
+  endpoint: ${JSON.stringify(ep)},
+};
+
+function parseRuntimeOptions() {
+  const flags = new Map();
+  for (let i = 0; i < Deno.args.length; i++) {
+    const arg = Deno.args[i];
+    if (!arg.startsWith("--")) continue;
+
+    const raw = arg.slice(2);
+    const eq = raw.indexOf("=");
+    if (eq >= 0) {
+      flags.set(raw.slice(0, eq), raw.slice(eq + 1));
+      continue;
+    }
+
+    const next = Deno.args[i + 1];
+    if (next && !next.startsWith("-")) {
+      flags.set(raw, next);
+      i++;
+    }
+  }
+
+  const port = parsePort(
+    flag(flags, ["port", "listen-port"]) ??
+      env(["ULTIMATE_SERVER_PORT", "ULTIMATE_PORT", "PORT"]) ??
+      String(defaultRuntimeOptions.port),
+    "port",
+  );
+  const host = flag(flags, ["host", "listen-host", "hostname"]) ??
+    env(["ULTIMATE_SERVER_HOST", "ULTIMATE_HOST", "HOST"]) ??
+    defaultRuntimeOptions.host;
+  const endpoint = normalizeEndpoint(
+    flag(flags, ["rpc-endpoint", "endpoint"]) ??
+      env([
+        "ULTIMATE_SERVER_RPC_ENDPOINT",
+        "ULTIMATE_RPC_ENDPOINT",
+        "RPC_ENDPOINT",
+        "ENDPOINT",
+      ]) ??
+      defaultRuntimeOptions.endpoint,
+  );
+
+  return { port, host, endpoint };
+}
+
+function flag(flags, names) {
+  for (const name of names) {
+    const value = flags.get(name);
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+}
+
+function env(names) {
+  for (const name of names) {
+    const value = Deno.env.get(name);
+    if (value?.trim()) return value.trim();
+  }
+}
+
+function parsePort(value, source) {
+  const port = Number(value);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error(source + " must be a valid TCP port");
+  }
+  return port;
+}
+
+function normalizeEndpoint(endpoint) {
+  const trimmed = endpoint.trim();
+  if (!trimmed.startsWith("/")) return ("/" + trimmed).replace(/\\/+$/, "");
+  return trimmed.replace(/\\/+$/, "") || "/";
+}
+
+const runtimeOptions = parseRuntimeOptions();
 const app = new Hono();
 const dev = Deno.env.get("DENO_ENV") !== "production";
 const serveClient = createStaticHandler(
   new URL("./client", import.meta.url).pathname,
 );
 
-app.use(${JSON.stringify(ep + "/*")}, cors({
+app.use(runtimeOptions.endpoint + "/*", cors({
   origin: "*",
   allowMethods: ["POST", "OPTIONS"],
   allowHeaders: ["Content-Type"],
@@ -104,7 +182,7 @@ const rpcHandler = createRpcHandler({
   },
 });
 
-app.post(${JSON.stringify(ep + "/:functionId")}, async (c) => {
+app.post(runtimeOptions.endpoint + "/:functionId", async (c) => {
   return await rpcHandler(c.req.raw, c.req.param("functionId"));
 });
 
@@ -124,8 +202,8 @@ app.get("*", async (c) => {
 });
 
 Deno.serve({
-  port: parseInt(Deno.env.get("PORT") || ${JSON.stringify(String(port))}),
-  hostname: ${JSON.stringify(host)},
+  port: runtimeOptions.port,
+  hostname: runtimeOptions.host,
 }, app.fetch);
 `;
 }

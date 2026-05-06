@@ -22,6 +22,7 @@ export interface UltimateConfig {
   dev?: {
     port?: number;
     apiPort?: number;
+    host?: string;
   };
   client?: {
     apiUrl?: string;
@@ -38,7 +39,7 @@ export interface ResolvedConfig {
     endpoint: string;
     output: ServerOutput;
   };
-  dev: { port: number; apiPort: number };
+  dev: { port: number; apiPort: number; host: string };
   client: { rpcBase: string };
 }
 
@@ -71,6 +72,7 @@ export function resolveConfig(config: UltimateConfig = {}): ResolvedConfig {
     dev: {
       port: config.dev?.port ?? 8000,
       apiPort: config.dev?.apiPort ?? 8001,
+      host: config.dev?.host ?? config.server?.host ?? "0.0.0.0",
     },
     client: { rpcBase },
   };

@@ -34,7 +34,7 @@ export async function startDevServer(
   const transformedDir = join(projectRoot, ".ultimate", "transformed-app");
   const distDir = join(projectRoot, "dist");
 
-  const { port: staticPort, apiPort } = config.dev;
+  const { port: staticPort, apiPort, host } = config.dev;
   const endpoint = config.server.endpoint.replace(/\/+$/, "");
 
   console.log("Starting Ultimate.js dev server...");
@@ -169,11 +169,12 @@ export async function startDevServer(
   });
 
   // ── Start ──
-  console.log(`\n  Static : http://localhost:${staticPort}`);
-  console.log(`  API    : http://localhost:${apiPort}`);
+  const displayHost = host === "0.0.0.0" ? "localhost" : host;
+  console.log(`\n  Static : http://${displayHost}:${staticPort}`);
+  console.log(`  API    : http://${displayHost}:${apiPort}`);
 
-  Deno.serve({ port: apiPort, onListen() {} }, api.fetch);
-  Deno.serve({ port: staticPort }, app.fetch);
+  Deno.serve({ port: apiPort, hostname: host, onListen() {} }, api.fetch);
+  Deno.serve({ port: staticPort, hostname: host }, app.fetch);
 }
 
 async function fullBuild(
