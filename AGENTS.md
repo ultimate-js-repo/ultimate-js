@@ -6,8 +6,8 @@ This is a Deno workspace. Package source lives under `packages/*`, with each
 package exposing its own `deno.json` and `mod.ts` entry point where applicable.
 Core areas include `packages/cli`, `packages/core`, `packages/compiler`,
 `packages/analyzer`, `packages/generator`, `packages/bundler-deno`,
-`packages/dev-server`, and runtime helpers such as `packages/react` and
-`packages/rpc-server`.
+`packages/rspack-plugin`, `packages/dev-server`, and runtime helpers such as
+`packages/react` and `packages/rpc-server`.
 
 The integration app is in `examples/showcase`. Tests live in `tests/`, with
 shared helpers in `tests/helpers.ts`. Generated output such as `.ultimate/`,
@@ -45,10 +45,10 @@ bundler, CLI, routing, or RPC behavior.
 
 When validating build artifacts, test all supported parser/bundler combinations:
 `babel/native`, `swc/native`, `babel/rspack`, and `swc/rspack`. `vite` is listed
-in config types but intentionally fails with `bundler "vite" is not implemented yet`
-until a real adapter exists. For standalone output, verify `/` serves HTML,
-`/assets/client.js` serves JavaScript, and at least one RPC endpoint returns
-`ok: true`.
+in config types but intentionally fails with
+`bundler "vite" is not implemented yet` until a real adapter exists. For
+standalone output, verify `/` serves HTML, `/assets/client.js` serves
+JavaScript, and at least one RPC endpoint returns `ok: true`.
 
 Before committing, run:
 
@@ -79,6 +79,14 @@ adapter must preserve Rspack’s value: do not pre-bundle with Deno. It should u
 Deno only to install npm dependencies and resolve the Deno module graph, then
 vendor/rewrite JSR or remote source imports so Rspack can compile the original
 TS/TSX entry graph directly.
+
+`packages/rspack-plugin` is the Rspack lifecycle adapter for Ultimate compiler
+analysis. Keep framework semantics such as route scanning, function
+classification, diagnostics, and RPC metadata in the bundler-independent
+`packages/analyzer`, `packages/compiler`, and `packages/generator` packages. The
+Rspack plugin should call those shared packages, surface diagnostics through
+Rspack, and emit or connect generated assets rather than reimplementing analyzer
+logic in Rspack-specific code.
 
 ## Commit & Pull Request Guidelines
 
