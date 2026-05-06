@@ -1,5 +1,6 @@
 import type { RemoteFunctionFailure } from "./types.ts";
 
+/** Error shape accepted by the protocol serializer when crossing the RPC boundary. */
 interface ErrorLike {
   name: string;
   message: string;
@@ -8,6 +9,7 @@ interface ErrorLike {
   code?: string;
 }
 
+/** Serializes unknown thrown values into the protocol's error payload shape. */
 export function serializeError(
   error: unknown,
   dev: boolean,
