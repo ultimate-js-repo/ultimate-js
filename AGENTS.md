@@ -105,11 +105,10 @@ import maps and package versions intentional. When changing versions, update the
 relevant package `deno.json` and verify publish workflows still target the right
 packages.
 
-The GitHub Actions JSR publish workflow is version-driven for packages under
-`packages/*/deno.json`. If any package `name`/`version` changes, or a new
-package `deno.json` appears, the workflow publishes from the repository root
-with `npx jsr publish`. Avoid unrelated version bumps because one matching
-change triggers a root workspace publish.
+The GitHub Actions JSR publish workflow runs only when `packages/*/deno.json`
+changes on `main`; when it runs, it publishes from the repository root with
+`npx jsr publish`. Avoid unrelated version bumps because any matching package
+config change triggers a root workspace publish.
 
 ## Agent-Specific Instructions
 
