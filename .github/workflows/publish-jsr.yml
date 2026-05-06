@@ -17,10 +17,9 @@ concurrency:
 
 jobs:
   detect:
-    name: Detect Version Changes
+    name: Detect Package Version Changes
     runs-on: ubuntu-latest
     outputs:
-      packages: ${{ steps.changed.outputs.packages }}
       has_changes: ${{ steps.changed.outputs.has_changes }}
     steps:
       - uses: actions/checkout@v6
@@ -28,7 +27,7 @@ jobs:
           fetch-depth: 0
 
       - id: changed
-        name: Build publish matrix
+        name: Check package versions
         shell: bash
         run: |
           set -euo pipefail
@@ -40,36 +39,7 @@ jobs:
             base="$(git rev-list --max-parents=0 "$head")"
           fi
 
-          jsr_version_status() {
-            local package="$1"
-            local version="$2"
-            local without_scope="${package#@}"
-            local scope="${without_scope%%/*}"
-            local name="${without_scope#*/}"
-
-            curl --retry 3 --retry-all-errors --retry-delay 2 -sS -o /dev/null -w "%{http_code}" \
-              "https://api.jsr.io/scopes/${scope}/packages/${name}/versions/${version}"
-          }
-
-          publish_order() {
-            case "$1" in
-              @ultimate-js/core) echo 10 ;;
-              @ultimate-js/protocol) echo 20 ;;
-              @ultimate-js/router) echo 30 ;;
-              @ultimate-js/analyzer) echo 40 ;;
-              @ultimate-js/generator) echo 50 ;;
-              @ultimate-js/rpc-server) echo 60 ;;
-              @ultimate-js/hono) echo 70 ;;
-              @ultimate-js/compiler) echo 80 ;;
-              @ultimate-js/bundler-deno) echo 90 ;;
-              @ultimate-js/dev-server) echo 100 ;;
-              @ultimate-js/rspack-plugin) echo 110 ;;
-              @ultimate-js/cli) echo 120 ;;
-              *) echo 999 ;;
-            esac
-          }
-
-          tmp="$(mktemp)"
+          has_changes=false
           for config in packages/*/deno.json; do
             [ -f "$config" ] || continue
 
@@ -77,82 +47,34 @@ jobs:
             version="$(jq -r '.version // empty' "$config")"
             [ -n "$name" ] && [ -n "$version" ] || continue
 
-            old_version="$(
+            old="$(
               git show "$base:$config" 2>/dev/null \
-                | jq -r '.version // empty' 2>/dev/null \
+                | jq -c '{name: (.name // ""), version: (.version // "")}' 2>/dev/null \
                 || true
             )"
+            current="$(jq -c '{name: (.name // ""), version: (.version // "")}' "$config")"
 
-            jsr_status="$(jsr_version_status "$name" "$version")"
-            if [ "$jsr_status" != "200" ] && [ "$jsr_status" != "404" ]; then
-              echo "Unexpected JSR API status $jsr_status for $name@$version" >&2
-              exit 1
-            fi
-
-            if [ "$old_version" != "$version" ] || [ "$jsr_status" = "404" ]; then
-              jq -cn \
-                --arg dir "$(dirname "$config")" \
-                --arg name "$name" \
-                --arg version "$version" \
-                --argjson order "$(publish_order "$name")" \
-                '{dir: $dir, name: $name, version: $version, order: $order}' >> "$tmp"
+            if [ -z "$old" ]; then
+              echo "New package detected: $name@$version"
+              has_changes=true
+            elif [ "$old" != "$current" ]; then
+              echo "Package version changed: $name@$version"
+              has_changes=true
             fi
           done
 
-          packages="$(jq -s -c 'sort_by(.order) | map(del(.order))' "$tmp")"
-          echo "packages=$packages" >> "$GITHUB_OUTPUT"
-
-          if [ "$packages" = "[]" ]; then
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          echo "has_changes=$has_changes" >> "$GITHUB_OUTPUT"
+          if [ "$has_changes" != "true" ]; then
             echo "No package version changes found."
-          else
-            echo "has_changes=true" >> "$GITHUB_OUTPUT"
-            echo "$packages" | jq .
           fi
 
   publish:
-    name: Publish ${{ matrix.name }}@${{ matrix.version }}
+    name: Publish Workspace
     runs-on: ubuntu-latest
     needs: detect
     if: needs.detect.outputs.has_changes == 'true'
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        include: ${{ fromJson(needs.detect.outputs.packages) }}
     steps:
       - uses: actions/checkout@v6
 
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Skip existing version
-        id: existing
-        shell: bash
-        run: |
-          set -euo pipefail
-          package="${{ matrix.name }}"
-          without_scope="${package#@}"
-          scope="${without_scope%%/*}"
-          name="${without_scope#*/}"
-
-          jsr_status="$(
-            curl --retry 3 --retry-all-errors --retry-delay 2 -sS -o /dev/null -w "%{http_code}" \
-              "https://api.jsr.io/scopes/${scope}/packages/${name}/versions/${{ matrix.version }}"
-          )"
-
-          if [ "$jsr_status" = "200" ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "${{ matrix.name }}@${{ matrix.version }} already exists on JSR."
-          elif [ "$jsr_status" = "404" ]; then
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Unexpected JSR API status $jsr_status for ${{ matrix.name }}@${{ matrix.version }}" >&2
-            exit 1
-          fi
-
       - name: Publish
-        if: steps.existing.outputs.exists != 'true'
-        working-directory: ${{ matrix.dir }}
-        run: deno publish
+        run: npx jsr publish
