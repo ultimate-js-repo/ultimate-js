@@ -118,3 +118,17 @@ initial concise target as the project gains structure, conventions, or recurring
 operational knowledge. Any information written to memory for this repository
 must also be reflected here so future contributors and agents share the same
 source of truth.
+
+When implementation, verification, or commit preparation reveals a repeatable
+project rule, testing expectation, package boundary, or operational gotcha,
+update `AGENTS.md` in the same session before finalizing or committing the
+related work. This includes lessons learned while using repo skills such as
+logical commit splitting, temporary integration-app validation, or local package
+linking.
+
+CLI runtime overrides follow a consistent precedence order: explicit flags, then
+environment variables, then resolved `ultimate.config.ts` defaults. `dev`
+supports `--port`, `--api-port`, `--host`, and `--rpc-endpoint`; server runtime
+entry points such as `preview`, `dist/server/main.ts`, and compiled executable
+output support `--port`, `--host`, and `--rpc-endpoint`. The resolved config is
+still baked into server output as the default runtime options.
