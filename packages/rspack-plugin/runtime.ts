@@ -1,7 +1,7 @@
 import { exists } from "@std/fs";
 import { join, toFileUrl } from "@std/path";
 import type { DocumentHead } from "@ultimate-js/core";
-import type { RspackFn } from "./types.ts";
+import type { RspackCompiler, RspackFn, RspackStats } from "./types.ts";
 
 export async function loadDocumentHead(
   projectRoot: string,
@@ -40,9 +40,27 @@ export async function loadRspack(): Promise<RspackFn> {
 export async function runRspack(
   rspack: RspackFn,
   config: Record<string, unknown>,
-): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const compiler = rspack(config);
+): Promise<RspackStats> {
+  return await runRspackCompiler(createRspackCompiler(rspack, config));
+}
+
+export function createRspackCompiler(
+  rspack: RspackFn,
+  config: Record<string, unknown>,
+): RspackCompiler {
+  return rspack(config);
+}
+
+export async function runRspackCompiler(
+  compiler: RspackCompiler,
+  changedFiles: string[] = [],
+): Promise<RspackStats> {
+  if (changedFiles.length > 0) {
+    compiler.modifiedFiles = new Set(changedFiles);
+    compiler.removedFiles = new Set();
+  }
+
+  return await new Promise<RspackStats>((resolve, reject) => {
     compiler.run((err, stats) => {
       if (err) {
         reject(err);
@@ -54,7 +72,23 @@ export async function runRspack(
         reject(new Error(`rspack build failed:\n${messages}`));
         return;
       }
-      resolve();
+      if (!stats) {
+        reject(new Error("rspack build did not return stats"));
+        return;
+      }
+      resolve(stats);
+    });
+  });
+}
+
+export async function closeRspackCompiler(
+  compiler: RspackCompiler | undefined,
+): Promise<void> {
+  if (!compiler?.close) return;
+  await new Promise<void>((resolve, reject) => {
+    compiler.close?.((err) => {
+      if (err) reject(err);
+      else resolve();
     });
   });
 }

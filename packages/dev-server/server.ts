@@ -2,8 +2,11 @@ import { join, relative } from "@std/path";
 import type { ResolvedConfig } from "@ultimate-js/core";
 import { runtimeImport } from "@ultimate-js/core";
 import { compileProject } from "@ultimate-js/compiler";
-import { buildRspackProject } from "@ultimate-js/rspack-plugin";
-import type { RspackCompileResult } from "@ultimate-js/rspack-plugin";
+import { createRspackDevBuilder } from "@ultimate-js/rspack-plugin";
+import type {
+  RspackCompileResult,
+  RspackDevBuilder,
+} from "@ultimate-js/rspack-plugin";
 import {
   generateClientProxyCode,
   generateServerManifestCode,
@@ -42,6 +45,12 @@ export async function startDevServer(
   console.log("Starting Ultimate.js dev server...");
   console.log(`  Project: ${projectRoot}`);
 
+  await removeDir(join(projectRoot, ".ultimate"));
+  await removeDir(distDir);
+  const rspackBuilder = config.bundler === "rspack"
+    ? createRspackDevBuilder({ projectRoot, config, distDir })
+    : undefined;
+
   // ── Initial build ──
   console.log("\n  Building client...");
   let serverManifest = await fullBuild(
@@ -51,6 +60,7 @@ export async function startDevServer(
     transformedDir,
     distDir,
     config,
+    rspackBuilder,
   );
   console.log("  Build complete.");
 
@@ -69,23 +79,24 @@ export async function startDevServer(
     const now = Date.now();
     if (building || now - lastBuild < 2000) return;
 
-    let changed = false;
+    const changedFiles: string[] = [];
     try {
       const { scanSourceFiles } = await import("@ultimate-js/analyzer");
       const files = await scanSourceFiles(appDir);
       for (const f of files) {
         const stat = await Deno.stat(f);
         if (stat.mtime && stat.mtime.getTime() > lastBuild) {
-          changed = true;
-          break;
+          changedFiles.push(f);
         }
       }
     } catch { /* ignore */ }
 
-    if (!changed) return;
+    if (changedFiles.length === 0) return;
 
     building = true;
-    console.log("\n  File change detected, rebuilding...");
+    console.log(
+      `\n  File change detected, rebuilding ${changedFiles.length} module(s)...`,
+    );
     try {
       serverManifest = await fullBuild(
         projectRoot,
@@ -94,6 +105,8 @@ export async function startDevServer(
         transformedDir,
         distDir,
         config,
+        rspackBuilder,
+        changedFiles,
       );
       rpcHandler = createRpcHandler({ manifest: serverManifest, dev: true });
 
@@ -178,14 +191,17 @@ async function fullBuild(
   transformedDir: string,
   distDir: string,
   config: ResolvedConfig,
+  rspackBuilder?: RspackDevBuilder,
+  changedFiles: string[] = [],
 ): Promise<ServerManifest> {
-  await removeDir(join(projectRoot, ".ultimate"));
-  await ensureDir(join(distDir, "client", "assets"));
-
   if (config.bundler === "rspack") {
-    const result = await buildRspackProject({ projectRoot, config, distDir });
+    const result = await rspackBuilder!.build(changedFiles);
+    await writeRspackDevManifest(projectRoot, result);
     return await createManifestFromFunctions(result);
   }
+
+  await removeDir(join(projectRoot, ".ultimate"));
+  await ensureDir(join(distDir, "client", "assets"));
 
   await ensureDir(generatedDir);
   await ensureDir(transformedDir);
@@ -232,6 +248,26 @@ async function fullBuild(
   await bundleClient(projectRoot, distDir, config);
 
   return await createManifestFromFunctions(result);
+}
+
+async function writeRspackDevManifest(
+  projectRoot: string,
+  result: { serverFunctions: RspackCompileResult["serverFunctions"] },
+): Promise<void> {
+  const outDir = join(projectRoot, ".ultimate", "rspack");
+  await ensureDir(outDir);
+  await writeTextFile(
+    join(outDir, "server-function-ids.json"),
+    JSON.stringify(
+      result.serverFunctions.map((fn) => ({
+        id: fn.info.id,
+        name: fn.info.name,
+        file: fn.info.file,
+      })),
+      null,
+      2,
+    ),
+  );
 }
 
 async function createManifestFromFunctions(

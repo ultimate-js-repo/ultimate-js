@@ -47,9 +47,12 @@ When validating build artifacts, test all supported parser/bundler combinations:
 `babel/native`, `swc/native`, `babel/rspack`, and `swc/rspack`. `vite` is listed
 in config types but intentionally fails with
 `bundler "vite" is not implemented yet` until a real adapter exists. For
-standalone output, verify `dist/client/index.html` and
-`dist/client/assets/client.js` exist, `dist/server/client` is not created, and
-at least one RPC endpoint returns `ok: true`.
+standalone output, verify `dist/client/index.html` and the expected browser
+entry asset exist, `dist/server/client` is not created, and at least one RPC
+endpoint returns `ok: true`. Native builds keep the fixed
+`dist/client/assets/client.js` entry. Rspack builds emit hashed entry and chunk
+assets, so read `dist/client/index.html` or Rspack stats for the actual script
+paths instead of assuming `/assets/client.js`.
 
 Before committing, run:
 
@@ -96,6 +99,30 @@ entries, and bundles both client and server output without relying on
 `.ultimate/generated/*.ts`. Native builds still use the existing compiler and
 generated-file flow.
 
+Rspack route splitting is framework-driven: generated client entries should use
+dynamic `import()` loaders for route pages and layouts so Rspack can form route
+chunks and shared async chunks. The Rspack build should emit hashed browser
+assets and inject the actual client entry script, modulepreload links for
+initial runtime/shared chunks, and bundled stylesheet links into
+`dist/client/index.html` from build stats. Do not execute runtime or vendor
+chunks as separate module scripts, and do not reintroduce a fixed
+`/assets/client.js` compatibility contract for Rspack. Inline `head.styles`
+should be converted into a CSS module for Rspack so production HTML links to a
+hashed CSS asset instead of carrying large inline style blocks.
+
+Rspack split chunks must not depend on mutable state hidden behind package
+barrel re-exports. Client RPC endpoint configuration is shared through the
+rpc-client runtime state on `globalThis` so the client entry and dynamically
+loaded route chunks observe the same endpoint after code splitting and
+tree-shaking.
+
+Rspack production builds also pre-render routes at build time for SEO. Import
+route and layout modules through the user project’s own `deno.json`, render the
+matched page HTML into `#root`, and write concrete `index.html` files for routes
+returned by `generateStaticParams()`. This is build-time static pre-rendering
+only, not request-time SSR, streaming SSR, RSC payload generation, or a
+client-reference manifest.
+
 ## Commit & Pull Request Guidelines
 
 Git history uses concise gitmoji-prefixed commit messages, for example
@@ -137,13 +164,24 @@ linking.
 
 CLI runtime overrides follow a consistent precedence order: explicit flags, then
 environment variables, then resolved `ultimate.config.ts` defaults. `dev`
-supports `--port`, `--api-port`, `--host`, and `--rpc-endpoint`; server runtime
-entry points such as `preview`, `dist/server/main.ts`, and compiled executable
-output support `--port`, `--host`, and `--rpc-endpoint`. The `build` command
-also supports `--parser` and `--bundler`, with environment fallbacks
-`ULTIMATE_BUILD_PARSER` / `ULTIMATE_PARSER` and `ULTIMATE_BUILD_BUNDLER` /
-`ULTIMATE_BUNDLER`. The resolved config is still baked into server output as the
-default runtime options.
+supports `--port`, `--api-port`, `--host`, `--rpc-endpoint`, `--parser`, and
+`--bundler`; server runtime entry points such as `preview`,
+`dist/server/main.ts`, and compiled executable output support `--port`,
+`--host`, and `--rpc-endpoint`. The `build` command also supports `--parser` and
+`--bundler`, with environment fallbacks `ULTIMATE_BUILD_PARSER` /
+`ULTIMATE_PARSER` and `ULTIMATE_BUILD_BUNDLER` / `ULTIMATE_BUNDLER`. For dev,
+use `ULTIMATE_DEV_PARSER` / `ULTIMATE_PARSER` and `ULTIMATE_DEV_BUNDLER` /
+`ULTIMATE_BUNDLER`; `dev` defaults to Rspack so it serves split chunks and
+bundled CSS unless `--bundler native` is passed. The resolved config is still
+baked into server output as the default runtime options.
+
+Rspack dev rebuilds should reuse the same client compiler when the generated
+client configuration is unchanged. Pass changed app module paths through
+`compiler.modifiedFiles` before rerunning the compiler so Rspack can perform an
+incremental rebuild of the affected modules and emitted chunks instead of
+recreating the whole client compiler on every edit. Recreate the compiler only
+when route structure, server function boundaries, aliases, CSS entry imports, or
+other generated client config inputs change.
 
 RPC streaming resume uses `Ultimate-Session-Cursor`; do not reintroduce
 `Ultimate-Session-Id`. SSE cursor values are server-generated UUIDs, opaque to

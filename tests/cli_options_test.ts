@@ -3,6 +3,7 @@ import { resolveConfig } from "@ultimate-js/core";
 import {
   applyBuildOverrides,
   applyDevOverrides,
+  applyPreviewOverrides,
   applyServerOverrides,
   parseCommandOptions,
 } from "../packages/cli/options.ts";
@@ -44,6 +45,39 @@ Deno.test("dev runtime overrides prefer flags over environment", () => {
   assertEquals(config.dev.host, "127.0.0.1");
   assertEquals(config.server.endpoint, "/api/rpc");
   assertEquals(config.client.rpcBase, "/api/rpc");
+  assertEquals(config.bundler, "rspack");
+  assertEquals(config.parser, "babel");
+});
+
+Deno.test("dev build overrides support parser and bundler", () => {
+  const config = applyDevOverrides(
+    resolveConfig({
+      bundler: "native",
+      parser: "babel",
+    }),
+    ["--bundler", "native", "--parser=swc"],
+    env({
+      ULTIMATE_DEV_BUNDLER: "rspack",
+      ULTIMATE_DEV_PARSER: "babel",
+    }),
+  );
+
+  assertEquals(config.bundler, "native");
+  assertEquals(config.parser, "swc");
+});
+
+Deno.test("dev build overrides read parser and bundler from environment", () => {
+  const config = applyDevOverrides(
+    resolveConfig({ bundler: "native", parser: "babel" }),
+    [],
+    env({
+      ULTIMATE_DEV_BUNDLER: "rspack",
+      ULTIMATE_DEV_PARSER: "swc",
+    }),
+  );
+
+  assertEquals(config.bundler, "rspack");
+  assertEquals(config.parser, "swc");
 });
 
 Deno.test("server runtime overrides support host, port, and endpoint", () => {
@@ -68,6 +102,54 @@ Deno.test("server runtime overrides support host, port, and endpoint", () => {
   assertEquals(config.server.host, "127.0.0.1");
   assertEquals(config.server.endpoint, "/rpc");
   assertEquals(config.client.rpcBase, "https://example.com/rpc");
+});
+
+Deno.test("preview overrides support runtime parser and bundler", () => {
+  const config = applyPreviewOverrides(
+    resolveConfig({
+      bundler: "native",
+      parser: "babel",
+      server: { port: 8100, host: "0.0.0.0", endpoint: "/_ultimate/rpc" },
+    }),
+    [
+      "--port",
+      "9700",
+      "--api-port=9701",
+      "--host",
+      "127.0.0.1",
+      "--rpc-endpoint",
+      "/preview/rpc",
+      "--bundler=rspack",
+      "--parser",
+      "swc",
+    ],
+    env({
+      ULTIMATE_PREVIEW_PORT: "9800",
+      ULTIMATE_PREVIEW_API_PORT: "9801",
+      ULTIMATE_PREVIEW_BUNDLER: "native",
+      ULTIMATE_PREVIEW_PARSER: "babel",
+    }),
+  );
+
+  assertEquals(config.server.port, 9700);
+  assertEquals(config.dev.apiPort, 9701);
+  assertEquals(config.server.host, "127.0.0.1");
+  assertEquals(config.dev.host, "127.0.0.1");
+  assertEquals(config.server.endpoint, "/preview/rpc");
+  assertEquals(config.client.rpcBase, "/preview/rpc");
+  assertEquals(config.bundler, "rspack");
+  assertEquals(config.parser, "swc");
+});
+
+Deno.test("preview api port defaults to client port plus one", () => {
+  const config = applyPreviewOverrides(
+    resolveConfig({ server: { port: 8100 } }),
+    ["--port", "9700"],
+    env({}),
+  );
+
+  assertEquals(config.server.port, 9700);
+  assertEquals(config.dev.apiPort, 9701);
 });
 
 Deno.test("build overrides support parser and bundler with flag priority", () => {

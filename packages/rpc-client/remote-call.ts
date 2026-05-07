@@ -5,7 +5,6 @@ import type {
   RemoteFunctionResult,
   RemoteFunctionSseEvent,
 } from "@ultimate-js/protocol";
-import { getRemoteEndpoint } from "./config.ts";
 
 export interface RemoteFunctionCallOptions {
   retries?: number;
@@ -18,6 +17,15 @@ type CallbackFn = (...args: unknown[]) => unknown | Promise<unknown>;
 const SESSION_CURSOR_HEADER = "Ultimate-Session-Cursor";
 const DEFAULT_RETRIES = 3;
 const DEFAULT_RETRY_BASE_DELAY_MS = 100;
+const REMOTE_ENDPOINT_KEY = "__ultimate_rpc_remote_endpoint__";
+
+type RpcGlobal = typeof globalThis & {
+  [REMOTE_ENDPOINT_KEY]?: string;
+};
+
+function getRemoteEndpoint(): string {
+  return (globalThis as RpcGlobal)[REMOTE_ENDPOINT_KEY] ?? "/_ultimate/rpc";
+}
 
 class NonRetryableRpcError extends Error {
   override cause?: unknown;

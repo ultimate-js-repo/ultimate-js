@@ -3,7 +3,7 @@ import { loadConfig } from "@ultimate-js/core";
 import {
   applyBuildOverrides,
   applyDevOverrides,
-  applyServerOverrides,
+  applyPreviewOverrides,
   parseCommandOptions,
 } from "./options.ts";
 
@@ -55,7 +55,7 @@ async function main() {
       const { preview } = await import("./preview.ts");
       await preview(
         projectRoot,
-        applyServerOverrides(baseConfig, options.rest),
+        applyPreviewOverrides(baseConfig, options.rest),
       );
       break;
     }

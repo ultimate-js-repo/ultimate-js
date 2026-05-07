@@ -1,4 +1,9 @@
-import { assertEquals } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertMatch,
+  assertStringIncludes,
+} from "@std/assert";
 import { join } from "@std/path";
 
 export const ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
@@ -74,12 +79,10 @@ export async function buildTest(opts: {
   const stderr = new TextDecoder().decode(result.stderr);
   assertEquals(result.code, 0, `Build failed:\n${stdout}\n${stderr}`);
 
-  const clientJs = join(SHOWCASE, "dist/client/assets/client.js");
   const clientHtml = join(SHOWCASE, "dist/client/index.html");
   const serverMain = join(SHOWCASE, "dist/server/main.ts");
   const serverClientDir = join(SHOWCASE, "dist/server/client");
 
-  assertEquals((await Deno.stat(clientJs)).isFile, true, "client.js missing");
   assertEquals(
     (await Deno.stat(clientHtml)).isFile,
     true,
@@ -94,12 +97,76 @@ export async function buildTest(opts: {
   }
 
   if (opts.bundler === "rspack") {
+    const html = await Deno.readTextFile(clientHtml);
+    assertMatch(
+      html,
+      /<script type="module" src="\/assets\/[^"]+\.[a-f0-9]{8}\.js"><\/script>/,
+      "rspack HTML should reference a hashed entry script",
+    );
+    assertEquals(
+      html.match(/<script type="module" src="\/assets\/[^"]+\.js"><\/script>/g)
+        ?.length,
+      1,
+      "rspack HTML should execute only the client entry script",
+    );
+    assertMatch(
+      html,
+      /<link rel="modulepreload" href="\/assets\/[^"]+\.[a-f0-9]{8}\.js" \/>/,
+      "rspack HTML should preload initial runtime and shared chunks",
+    );
+    assertMatch(
+      html,
+      /<link rel="stylesheet" href="\/assets\/[^"]+\.[a-f0-9]{8}\.css" \/>/,
+      "rspack HTML should reference hashed stylesheet assets",
+    );
+    assertStringIncludes(html, "Ultimate.js");
+    assertStringIncludes(html, "Full-stack Deno framework");
+    assertEquals(
+      html.includes("<style>"),
+      false,
+      "rspack should bundle head styles instead of inlining them",
+    );
+
+    const chunkFiles = await collectFiles(
+      join(SHOWCASE, "dist/client/assets/chunks"),
+    );
+    assert(
+      chunkFiles.some((file) => file.endsWith(".js")),
+      "rspack should emit route chunks",
+    );
+
+    const assetFiles = await collectFiles(join(SHOWCASE, "dist/client/assets"));
+    assert(
+      assetFiles.some((file) => file.endsWith(".css")),
+      "rspack should emit bundled CSS assets",
+    );
+
+    const dynamicHtml = join(
+      SHOWCASE,
+      "dist/client/docs/getting-started/index.html",
+    );
+    const dynamicContent = await Deno.readTextFile(dynamicHtml);
+    assertStringIncludes(
+      dynamicContent,
+      "Getting started with Ultimate.js",
+    );
+
+    try {
+      await Deno.stat(join(SHOWCASE, "dist/client/assets/client.js"));
+      throw new Error("rspack should not emit compatibility client.js");
+    } catch (err) {
+      assertEquals(err instanceof Deno.errors.NotFound, true);
+    }
+
     try {
       await Deno.stat(join(SHOWCASE, ".ultimate", "generated"));
       throw new Error(".ultimate/generated should not exist for rspack builds");
     } catch (err) {
       assertEquals(err instanceof Deno.errors.NotFound, true);
     }
+  } else {
+    const clientJs = join(SHOWCASE, "dist/client/assets/client.js");
+    assertEquals((await Deno.stat(clientJs)).isFile, true, "client.js missing");
   }
 
   if (opts.output === "executable") {
@@ -108,6 +175,19 @@ export async function buildTest(opts: {
   }
 
   await clean();
+}
+
+async function collectFiles(dir: string): Promise<string[]> {
+  const files: string[] = [];
+  for await (const entry of Deno.readDir(dir)) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory) {
+      files.push(...await collectFiles(path));
+    } else if (entry.isFile) {
+      files.push(path);
+    }
+  }
+  return files;
 }
 
 export async function rpcCall(

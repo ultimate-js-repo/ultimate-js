@@ -12,7 +12,18 @@ import type {
 
 export type RspackStats = {
   hasErrors(): boolean;
-  toJson(opts: { errors: boolean }): { errors?: { message: string }[] };
+  toJson(
+    opts: Record<string, unknown>,
+  ): {
+    assets?: Array<
+      { name?: string; info?: { hotModuleReplacement?: boolean } }
+    >;
+    entrypoints?: Record<
+      string,
+      { assets?: Array<string | { name?: string }> }
+    >;
+    errors?: { message: string }[];
+  };
 };
 
 export type RspackAsyncHook<T> = {
@@ -21,7 +32,10 @@ export type RspackAsyncHook<T> = {
 
 export type RspackCompiler = {
   context?: string;
+  modifiedFiles?: Set<string>;
+  removedFiles?: Set<string>;
   run(callback: (err: Error | null, stats: RspackStats | null) => void): void;
+  close?(callback: (err?: Error | null) => void): void;
   hooks?: {
     beforeRun?: RspackAsyncHook<RspackCompiler>;
     watchRun?: RspackAsyncHook<RspackCompiler>;
@@ -41,7 +55,9 @@ export interface RspackCompileResult {
 }
 
 export interface RspackBuildResult extends RspackCompileResult {
-  clientBundle: string;
+  clientScripts: string[];
+  clientStylesheets: string[];
+  clientModulePreloads: string[];
   serverBundle: string;
 }
 
@@ -67,4 +83,9 @@ export interface BuildRspackProjectOptions extends UltimateRspackPluginOptions {
   projectRoot: string;
   config: ResolvedConfig;
   distDir?: string;
+}
+
+export interface RspackDevBuilder {
+  build(changedFiles?: string[]): Promise<RspackBuildResult>;
+  close(): Promise<void>;
 }

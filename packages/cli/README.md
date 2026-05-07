@@ -16,7 +16,7 @@ ultimate preview [project] # Preview production build
 `ultimate dev` accepts runtime overrides:
 
 ```bash
-ultimate dev [project] --port 8000 --api-port 8001 --host 0.0.0.0 --rpc-endpoint /_ultimate/rpc
+ultimate dev [project] --port 8000 --api-port 8001 --host 0.0.0.0 --rpc-endpoint /_ultimate/rpc --bundler rspack --parser babel
 ```
 
 Environment variables are also supported:
@@ -26,6 +26,12 @@ Environment variables are also supported:
 - `ULTIMATE_DEV_HOST`, `ULTIMATE_HOST`, or `HOST`
 - `ULTIMATE_DEV_RPC_ENDPOINT`, `ULTIMATE_RPC_ENDPOINT`, `RPC_ENDPOINT`, or
   `ENDPOINT`
+- `ULTIMATE_DEV_BUNDLER` or `ULTIMATE_BUNDLER`
+- `ULTIMATE_DEV_PARSER` or `ULTIMATE_PARSER`
+
+`ultimate dev` defaults to the Rspack bundler so local development uses the same
+split chunk and bundled CSS path as production Rspack builds. Pass
+`--bundler native` to opt back into the Deno bundle development path.
 
 `ultimate preview`, standalone server output, and executable server output
 accept server runtime overrides:

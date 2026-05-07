@@ -274,7 +274,15 @@ export default function Page(): React.ReactElement {
               ))}
             </div>
             <div className="code-content">
-              {codeTabs[activeTab].code}
+              <div style={{ display: activeTab === 0 ? "block" : "none" }}>
+                {codeTabs[0].code}
+              </div>
+              <div style={{ display: activeTab === 1 ? "block" : "none" }}>
+                {codeTabs[1].code}
+              </div>
+              <div style={{ display: activeTab === 2 ? "block" : "none" }}>
+                {codeTabs[2].code}
+              </div>
             </div>
           </div>
         </section>

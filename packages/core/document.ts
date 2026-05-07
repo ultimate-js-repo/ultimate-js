@@ -14,6 +14,17 @@ export interface DocumentHead {
   styles?: string[];
 }
 
+export interface DocumentOptions {
+  /** HTML to place inside the root element. */
+  bodyHtml?: string;
+  /** Stylesheet paths emitted by the selected bundler. */
+  stylesheets?: string[];
+  /** Module script paths emitted by the selected bundler. */
+  scripts?: string[];
+  /** Module paths to preload before hydration. */
+  modulePreloads?: string[];
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
@@ -22,7 +33,10 @@ function escapeHtml(s: string): string {
 /**
  * Render a DocumentHead to a full HTML string ready to serve as index.html.
  */
-export function renderDocument(head: DocumentHead = {}): string {
+export function renderDocument(
+  head: DocumentHead = {},
+  options: DocumentOptions = {},
+): string {
   const lang = head.lang || "en";
   const title = head.title || "Ultimate.js";
 
@@ -53,14 +67,26 @@ export function renderDocument(head: DocumentHead = {}): string {
     }
   }
 
-  h += `\n  <script type="module" src="/assets/client.js"></script>`;
+  for (const href of options.stylesheets ?? []) {
+    h += `\n  <link rel="stylesheet" href="${escapeHtml(href)}" />`;
+  }
+
+  for (const href of options.modulePreloads ?? []) {
+    h += `\n  <link rel="modulepreload" href="${escapeHtml(href)}" />`;
+  }
+
+  for (const src of options.scripts ?? ["/assets/client.js"]) {
+    h += `\n  <script type="module" src="${escapeHtml(src)}"></script>`;
+  }
+
+  const bodyHtml = options.bodyHtml ?? "";
 
   return `<!doctype html>
 <html lang="${lang}">
 <head>${h}
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">${bodyHtml}</div>
 </body>
 </html>`;
 }

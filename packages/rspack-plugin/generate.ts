@@ -5,37 +5,46 @@ import type { ResolvedConfig } from "@ultimate-js/core";
 export function generateClientEntryCode(
   routes: RouteRecord[],
   rpcBase: string,
+  cssImports: string[] = [],
 ): string {
   const imports: string[] = [
+    ...cssImports.map((file) => `import ${JSON.stringify(file)};`),
     `import React from "react";`,
-    `import { createRoot } from "react-dom/client";`,
-    `import { Router } from "@ultimate-js/react";`,
-    `import { setRemoteEndpoint } from "@ultimate-js/rpc-client";`,
+    `import { createRoot, hydrateRoot } from "react-dom/client";`,
+    `import { loadRouteMatch, Router } from "@ultimate-js/react";`,
+    `import { setRemoteEndpoint } from "ultimate-rpc-client-config";`,
   ];
-  const layoutAlias = new Map<string, string>();
+  const layoutLoader = new Map<string, string>();
   let idx = 0;
 
   for (const route of routes) {
     for (const layout of route.layoutFiles) {
-      if (!layoutAlias.has(layout)) {
-        const alias = `layout${idx++}`;
-        layoutAlias.set(layout, alias);
-        imports.push(`import * as ${alias} from ${JSON.stringify(layout)};`);
+      if (!layoutLoader.has(layout)) {
+        const name = chunkName("layout", `${idx++}-${layout}`);
+        layoutLoader.set(
+          layout,
+          `() => import(/* webpackChunkName: ${JSON.stringify(name)} */ ${
+            JSON.stringify(layout)
+          })`,
+        );
       }
     }
   }
 
   const entries: string[] = [];
   for (const route of routes) {
-    const alias = `page${idx++}`;
-    imports.push(`import * as ${alias} from ${JSON.stringify(route.file)};`);
+    const name = chunkName("route", `${route.id}-${route.path}`);
+    const load = `() => import(/* webpackChunkName: ${
+      JSON.stringify(name)
+    } */ ${JSON.stringify(route.file)})`;
     const layouts = route.layoutFiles
-      .map((layout) => `${layoutAlias.get(layout)!}.default`)
+      .map((layout) => layoutLoader.get(layout)!)
       .join(", ");
     entries.push(`  {
     id: ${JSON.stringify(route.id)},
     path: ${JSON.stringify(route.path)},
-    component: ${alias}.default,
+    segments: ${JSON.stringify(route.segments)},
+    load: ${load},
     layouts: [${layouts}],
   }`);
   }
@@ -49,19 +58,41 @@ ${entries.join(",\n")}
 setRemoteEndpoint(${JSON.stringify(rpcBase)});
 
 const root = document.getElementById("root");
-if (root) {
-  createRoot(root).render(
-    React.createElement(Router, { routes }),
-  );
+if (root) void boot(root);
+
+async function boot(root) {
+  let initialMatch = null;
+  if (root.hasChildNodes()) {
+    try {
+      initialMatch = await loadRouteMatch(routes, globalThis.location.pathname);
+    } catch {
+      initialMatch = null;
+    }
+  }
+
+  const app = React.createElement(Router, { routes, initialMatch });
+  if (initialMatch && root.hasChildNodes()) {
+    hydrateRoot(root, app);
+    return;
+  }
+  createRoot(root).render(app);
 }
 `;
+}
+
+function chunkName(prefix: string, value: string): string {
+  const slug = value
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  return `${prefix}-${slug || "index"}`;
 }
 
 export function generateClientProxyJs(
   serverFunctions: ClassifiedFunction[],
 ): string {
   const lines = [
-    `import { remoteFunctionCall } from "@ultimate-js/rpc-client";`,
+    `import { remoteFunctionCall } from "ultimate-rpc-client-remote-call";`,
     ``,
   ];
   for (const fn of serverFunctions) {
@@ -118,7 +149,7 @@ export function generateServerEntryCode(
 
   return `${imports.join("\n")}
 
-const serverManifest = {
+export const serverManifest = {
 ${manifestEntries.join("\n")}
 };
 
@@ -181,7 +212,7 @@ function normalizeEndpoint(endpoint) {
   return trimmed.replace(/\\/+$/, "") || "/";
 }
 
-const runtimeOptions = parseRuntimeOptions();
+function createServerApp(runtimeOptions) {
 const app = new Hono();
 const dev = Deno.env.get("DENO_ENV") !== "production";
 
@@ -211,10 +242,18 @@ app.all("*", (c) => {
   return c.text("Not found", 404);
 });
 
+return { app, dev };
+}
+
+if (import.meta.main) {
+const runtimeOptions = parseRuntimeOptions();
+const { app } = createServerApp(runtimeOptions);
+
 const displayHost = runtimeOptions.host === "0.0.0.0"
   ? "localhost"
   : runtimeOptions.host;
 console.log("Listening on http://" + runtimeOptions.host + ":" + runtimeOptions.port + "/ (http://" + displayHost + ":" + runtimeOptions.port + "/)");
 Deno.serve({ port: runtimeOptions.port, hostname: runtimeOptions.host, onListen() {} }, app.fetch);
+}
 `;
 }

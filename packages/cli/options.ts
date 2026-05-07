@@ -56,6 +56,7 @@ export function applyDevOverrides(
   args: string[],
   env: Deno.Env = Deno.env,
 ): ResolvedConfig {
+  const flags = parseFlags(args);
   const overrides = readRuntimeOverrides(args, env, {
     portEnv: ["ULTIMATE_DEV_PORT", "ULTIMATE_PORT", "PORT"],
     apiPortEnv: ["ULTIMATE_DEV_API_PORT", "ULTIMATE_API_PORT", "API_PORT"],
@@ -67,8 +68,17 @@ export function applyDevOverrides(
       "ENDPOINT",
     ],
   });
+  const buildOverrides = readBuildOverrides(flags, env, {
+    bundlerEnv: ["ULTIMATE_DEV_BUNDLER", "ULTIMATE_BUNDLER"],
+    parserEnv: ["ULTIMATE_DEV_PARSER", "ULTIMATE_PARSER"],
+  });
+  const merged = mergeConfig(config, overrides, { updateDev: true });
 
-  return mergeConfig(config, overrides, { updateDev: true });
+  return {
+    ...merged,
+    bundler: buildOverrides.bundler ?? "rspack",
+    parser: buildOverrides.parser ?? merged.parser,
+  };
 }
 
 export function applyServerOverrides(
@@ -90,6 +100,59 @@ export function applyServerOverrides(
   return mergeConfig(config, overrides, { updateServer: true });
 }
 
+export function applyPreviewOverrides(
+  config: ResolvedConfig,
+  args: string[],
+  env: Deno.Env = Deno.env,
+): ResolvedConfig {
+  const flags = parseFlags(args);
+  const runtimeOverrides = readRuntimeOverridesFromFlags(flags, env, {
+    portEnv: [
+      "ULTIMATE_PREVIEW_PORT",
+      "ULTIMATE_SERVER_PORT",
+      "ULTIMATE_PORT",
+      "PORT",
+    ],
+    apiPortEnv: [
+      "ULTIMATE_PREVIEW_API_PORT",
+      "ULTIMATE_API_PORT",
+      "API_PORT",
+    ],
+    hostEnv: [
+      "ULTIMATE_PREVIEW_HOST",
+      "ULTIMATE_SERVER_HOST",
+      "ULTIMATE_HOST",
+      "HOST",
+    ],
+    endpointEnv: [
+      "ULTIMATE_PREVIEW_RPC_ENDPOINT",
+      "ULTIMATE_SERVER_RPC_ENDPOINT",
+      "ULTIMATE_RPC_ENDPOINT",
+      "RPC_ENDPOINT",
+      "ENDPOINT",
+    ],
+  });
+  const buildOverrides = readBuildOverrides(flags, env, {
+    bundlerEnv: ["ULTIMATE_PREVIEW_BUNDLER", "ULTIMATE_BUNDLER"],
+    parserEnv: ["ULTIMATE_PREVIEW_PARSER", "ULTIMATE_PARSER"],
+  });
+  const merged = mergeConfig(config, runtimeOverrides, {
+    updateServer: true,
+  });
+  const apiPort = runtimeOverrides.apiPort ?? (merged.server.port + 1);
+
+  return {
+    ...merged,
+    bundler: buildOverrides.bundler ?? merged.bundler,
+    parser: buildOverrides.parser ?? merged.parser,
+    dev: {
+      ...merged.dev,
+      apiPort,
+      host: merged.server.host,
+    },
+  };
+}
+
 export function applyBuildOverrides(
   config: ResolvedConfig,
   args: string[],
@@ -106,7 +169,10 @@ export function applyBuildOverrides(
       "ENDPOINT",
     ],
   });
-  const buildOverrides = readBuildOverrides(flags, env);
+  const buildOverrides = readBuildOverrides(flags, env, {
+    bundlerEnv: ["ULTIMATE_BUILD_BUNDLER", "ULTIMATE_BUNDLER"],
+    parserEnv: ["ULTIMATE_BUILD_PARSER", "ULTIMATE_PARSER"],
+  });
   const merged = mergeConfig(config, runtimeOverrides, { updateServer: true });
 
   return {
@@ -205,12 +271,13 @@ function readRuntimeOverridesFromFlags(
 function readBuildOverrides(
   flags: Map<string, FlagValue>,
   env: Deno.Env,
+  names: { bundlerEnv: string[]; parserEnv: string[] },
 ): Pick<BuildOverrides, "bundler" | "parser"> {
   return {
     bundler: readBundlerFlag(flags, ["bundler"]) ??
-      readBundlerEnv(env, ["ULTIMATE_BUILD_BUNDLER", "ULTIMATE_BUNDLER"]),
+      readBundlerEnv(env, names.bundlerEnv),
     parser: readParserFlag(flags, ["parser"]) ??
-      readParserEnv(env, ["ULTIMATE_BUILD_PARSER", "ULTIMATE_PARSER"]),
+      readParserEnv(env, names.parserEnv),
   };
 }
 

@@ -18,40 +18,36 @@ export async function preview(
   const { createRpcHandler } = await import("@ultimate-js/rpc-server");
   const { createStaticHandler } = await import("@ultimate-js/hono");
 
-  const app = new Hono();
+  const clientApp = new Hono();
+  const apiApp = new Hono();
   const { port, host, endpoint } = config.server;
+  const apiPort = config.dev.apiPort;
   const ep = endpoint.replace(/\/+$/, "");
 
-  let serverManifest: ServerManifest = {};
-  try {
-    const manifestPath = join(
-      projectRoot,
-      "dist",
-      "server",
-      ".ultimate",
-      "generated",
-      "server-manifest.ts",
-    );
-    const manifestModule = await runtimeImport(manifestPath);
-    serverManifest = manifestModule.serverManifest as ServerManifest;
-  } catch {
-    console.log("  Warning: Could not load server manifest");
-  }
+  const serverManifest = await loadServerManifest(projectRoot, config);
 
   const rpcHandler = createRpcHandler({ manifest: serverManifest, dev: false });
 
-  app.post(`${ep}/:functionId`, async (c: HonoContext) => {
+  apiApp.post(`${ep}/:functionId`, async (c: HonoContext) => {
     return await rpcHandler(c.req.raw, c.req.param("functionId"));
   });
 
-  app.options(`${ep}/:functionId`, async (c: HonoContext) => {
+  apiApp.options(`${ep}/:functionId`, async (c: HonoContext) => {
+    return await rpcHandler(c.req.raw, c.req.param("functionId"));
+  });
+
+  clientApp.post(`${ep}/:functionId`, async (c: HonoContext) => {
+    return await rpcHandler(c.req.raw, c.req.param("functionId"));
+  });
+
+  clientApp.options(`${ep}/:functionId`, async (c: HonoContext) => {
     return await rpcHandler(c.req.raw, c.req.param("functionId"));
   });
 
   const clientDir = join(projectRoot, "dist", "client");
   const serveClient = createStaticHandler(clientDir);
 
-  app.get("*", async (c: HonoContext) => {
+  clientApp.get("*", async (c: HonoContext) => {
     const pathname = new URL(c.req.raw.url).pathname;
     const response = await serveClient(c.req.raw, pathname);
     if (response) return response;
@@ -68,9 +64,58 @@ export async function preview(
   });
 
   console.log(
-    `\nPreview server running at http://${
+    `\nPreview client running at http://${
       host === "0.0.0.0" ? "localhost" : host
     }:${port}`,
   );
-  Deno.serve({ port, hostname: host }, app.fetch);
+  console.log(
+    `Preview API running at http://${
+      host === "0.0.0.0" ? "localhost" : host
+    }:${apiPort}`,
+  );
+  Deno.serve({ port: apiPort, hostname: host, onListen() {} }, apiApp.fetch);
+  Deno.serve({ port, hostname: host }, clientApp.fetch);
+}
+
+async function loadServerManifest(
+  projectRoot: string,
+  config: ResolvedConfig,
+): Promise<ServerManifest> {
+  const manifestPaths = config.bundler === "rspack"
+    ? [
+      join(projectRoot, "dist", "server", "main.ts"),
+      join(
+        projectRoot,
+        "dist",
+        "server",
+        ".ultimate",
+        "generated",
+        "server-manifest.ts",
+      ),
+    ]
+    : [
+      join(
+        projectRoot,
+        "dist",
+        "server",
+        ".ultimate",
+        "generated",
+        "server-manifest.ts",
+      ),
+      join(projectRoot, "dist", "server", "main.ts"),
+    ];
+
+  for (const manifestPath of manifestPaths) {
+    try {
+      const manifestModule = await runtimeImport(manifestPath);
+      if (manifestModule.serverManifest) {
+        return manifestModule.serverManifest as ServerManifest;
+      }
+    } catch {
+      // Try the next production artifact shape.
+    }
+  }
+
+  console.log("  Warning: Could not load server manifest");
+  return {};
 }
