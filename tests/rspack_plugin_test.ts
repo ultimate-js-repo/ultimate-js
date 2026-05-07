@@ -1,8 +1,8 @@
-import { assertStringIncludes } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { UltimateRspackPlugin } from "@ultimate-js/rspack-plugin";
 
-Deno.test("UltimateRspackPlugin analyzes a project and emits RPC assets", async () => {
+Deno.test("UltimateRspackPlugin analyzes a project without generated files", async () => {
   const projectRoot = await Deno.makeTempDir({ prefix: "ultimate-rspack-" });
   const appDir = join(projectRoot, "app");
   const functionsDir = join(appDir, "functions");
@@ -31,16 +31,13 @@ export function getUser() {
   const plugin = new UltimateRspackPlugin({ projectRoot });
   const result = await plugin.analyze();
 
-  const generatedDir = join(projectRoot, ".ultimate", "generated");
-  const proxy = await Deno.readTextFile(
-    join(generatedDir, "client-proxies.ts"),
-  );
-  const manifest = await Deno.readTextFile(
-    join(generatedDir, "server-manifest.ts"),
-  );
+  assertEquals(result.serverFunctions.length, 1);
+  assertEquals(result.serverFunctions[0].info.name, "getUser");
 
-  assertStringIncludes(proxy, "export function getUser");
-  assertStringIncludes(manifest, "getUser");
-  assertStringIncludes(manifest, "serverManifest");
-  assertStringIncludes(result.serverFunctions[0].info.name, "getUser");
+  try {
+    await Deno.stat(join(projectRoot, ".ultimate", "generated"));
+    throw new Error("generated directory should not exist");
+  } catch (err) {
+    assertEquals(err instanceof Deno.errors.NotFound, true);
+  }
 });

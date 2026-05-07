@@ -2,6 +2,8 @@ import { join, relative } from "@std/path";
 import type { ResolvedConfig } from "@ultimate-js/core";
 import { runtimeImport } from "@ultimate-js/core";
 import { compileProject } from "@ultimate-js/compiler";
+import { buildRspackProject } from "@ultimate-js/rspack-plugin";
+import type { RspackCompileResult } from "@ultimate-js/rspack-plugin";
 import {
   generateClientProxyCode,
   generateServerManifestCode,
@@ -42,7 +44,7 @@ export async function startDevServer(
 
   // ── Initial build ──
   console.log("\n  Building client...");
-  await fullBuild(
+  let serverManifest = await fullBuild(
     projectRoot,
     appDir,
     generatedDir,
@@ -56,16 +58,6 @@ export async function startDevServer(
   const { Hono } = await import("hono");
   const { createRpcHandler } = await import("@ultimate-js/rpc-server");
   const { createStaticHandler } = await import("@ultimate-js/hono");
-
-  let serverManifest: ServerManifest = {};
-  try {
-    const manifestModule = await runtimeImport(
-      join(projectRoot, ".ultimate", "generated", "server-manifest.ts"),
-    );
-    serverManifest = manifestModule.serverManifest as ServerManifest;
-  } catch {
-    console.log("  Warning: Could not load server manifest, RPC may not work");
-  }
 
   let rpcHandler = createRpcHandler({ manifest: serverManifest, dev: true });
 
@@ -95,7 +87,7 @@ export async function startDevServer(
     building = true;
     console.log("\n  File change detected, rebuilding...");
     try {
-      await fullBuild(
+      serverManifest = await fullBuild(
         projectRoot,
         appDir,
         generatedDir,
@@ -103,12 +95,6 @@ export async function startDevServer(
         distDir,
         config,
       );
-
-      const manifestPath =
-        join(projectRoot, ".ultimate", "generated", "server-manifest.ts") +
-        `?t=${Date.now()}`;
-      const mod = await runtimeImport(manifestPath);
-      serverManifest = mod.serverManifest as ServerManifest;
       rpcHandler = createRpcHandler({ manifest: serverManifest, dev: true });
 
       console.log("  Rebuild complete.");
@@ -192,11 +178,17 @@ async function fullBuild(
   transformedDir: string,
   distDir: string,
   config: ResolvedConfig,
-): Promise<void> {
+): Promise<ServerManifest> {
   await removeDir(join(projectRoot, ".ultimate"));
+  await ensureDir(join(distDir, "client", "assets"));
+
+  if (config.bundler === "rspack") {
+    const result = await buildRspackProject({ projectRoot, config, distDir });
+    return await createManifestFromFunctions(result);
+  }
+
   await ensureDir(generatedDir);
   await ensureDir(transformedDir);
-  await ensureDir(join(distDir, "client", "assets"));
 
   const result = await compileProject({ projectRoot, config });
 
@@ -238,4 +230,31 @@ async function fullBuild(
   );
 
   await bundleClient(projectRoot, distDir, config);
+
+  return await createManifestFromFunctions(result);
+}
+
+async function createManifestFromFunctions(
+  result: { serverFunctions: RspackCompileResult["serverFunctions"] },
+): Promise<ServerManifest> {
+  const manifest: ServerManifest = {};
+  const byFile = new Map<string, typeof result.serverFunctions>();
+  for (const fn of result.serverFunctions) {
+    const list = byFile.get(fn.info.file) ?? [];
+    list.push(fn);
+    byFile.set(fn.info.file, list);
+  }
+
+  for (const [file, fns] of byFile) {
+    const mod = await runtimeImport(`${file}?t=${Date.now()}`);
+    for (const fn of fns) {
+      const name = fn.info.exportName || fn.info.name;
+      const value = name === "default" ? mod.default : mod[name];
+      if (typeof value === "function") {
+        manifest[fn.info.id] = value as ServerManifest[string];
+      }
+    }
+  }
+
+  return manifest;
 }

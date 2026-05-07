@@ -1,10 +1,10 @@
 # @ultimate-js/rspack-plugin
 
-Rspack adapter for Ultimate.js compiler analysis.
+Rspack orchestration for Ultimate.js analysis and bundling.
 
 The plugin keeps framework semantics in the bundler-independent
-`@ultimate-js/analyzer` / `@ultimate-js/compiler` packages, then runs that
-analysis from Rspack's build lifecycle.
+`@ultimate-js/analyzer` package, then drives Rspack client and server builds
+without using the standalone `compileProject()` pre-scan.
 
 ## Usage
 
@@ -22,41 +22,20 @@ export default {
 };
 ```
 
-By default the plugin writes:
-
-- `.ultimate/generated/client-proxies.ts`
-- `.ultimate/generated/server-manifest.ts`
-
-Disable generated files when another build step owns them:
-
-```ts
-new UltimateRspackPlugin({
-  emit: false,
-});
-```
-
-Or select individual generated files:
-
-```ts
-new UltimateRspackPlugin({
-  emit: {
-    clientProxy: true,
-    serverManifest: false,
-  },
-});
-```
-
 ## API
 
 - `new UltimateRspackPlugin(options)` — run Ultimate analysis before Rspack
   builds and watch rebuilds.
 - `createUltimateRspackPlugin(options)` — factory helper.
 - `plugin.analyze(compiler?)` — manually run analysis and return a
-  `CompileResult`.
-- `plugin.result` — latest `CompileResult`, if analysis has run.
+  `RspackCompileResult`.
+- `plugin.result` — latest `RspackCompileResult`, if analysis has run.
+- `buildRspackProject(options)` — analyze sources, generate virtual client and
+  server entries, bundle both outputs, and return a `RspackBuildResult`.
 
 ## Scope
 
-This package is the Rspack lifecycle adapter. Function classification, route
-scanning, diagnostics, and RPC metadata generation remain in the core Ultimate
-packages so native and Rspack builds share the same behavior.
+Rspack builds do not write or depend on `.ultimate/generated/*.ts`. Client
+proxies, route manifests, and server manifests are generated as virtual source
+inside the Rspack build. Native builds continue to use the compiler and physical
+generated-file flow.

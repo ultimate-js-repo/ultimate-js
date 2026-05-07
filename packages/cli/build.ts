@@ -1,6 +1,7 @@
 import { join, relative } from "@std/path";
 import type { ResolvedConfig } from "@ultimate-js/core";
 import { compileProject } from "@ultimate-js/compiler";
+import { buildRspackProject } from "@ultimate-js/rspack-plugin";
 import {
   generateClientProxyCode,
   generateServerManifestCode,
@@ -33,10 +34,25 @@ export async function build(
   console.log("\n[1/6] Cleaning output directories...");
   await removeDir(join(projectRoot, ".ultimate"));
   await removeDir(distDir);
-  await ensureDir(generatedDir);
-  await ensureDir(transformedDir);
   await ensureDir(join(distDir, "client", "assets"));
   await ensureDir(join(distDir, "server"));
+
+  if (config.bundler === "rspack") {
+    console.log("[2/6] Building with Rspack orchestration...");
+    const result = await buildRspackProject({ projectRoot, config, distDir });
+    console.log(`  Found ${result.routes.length} route(s)`);
+    console.log(`  Analyzed ${result.analyses.length} source file(s)`);
+    console.log(`  Server functions: ${result.serverFunctions.length}`);
+    console.log(`  Client functions: ${result.clientFunctions.length}`);
+    console.log(`  Shared functions: ${result.sharedFunctions.length}`);
+    console.log("\nBuild complete!");
+    console.log(`  Client: ${join(distDir, "client")}`);
+    console.log(`  Server: ${join(distDir, "server")}`);
+    return;
+  }
+
+  await ensureDir(generatedDir);
+  await ensureDir(transformedDir);
 
   // 2-4. Compile project
   console.log("[2/6] Scanning routes...");
