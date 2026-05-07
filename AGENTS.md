@@ -47,8 +47,9 @@ When validating build artifacts, test all supported parser/bundler combinations:
 `babel/native`, `swc/native`, `babel/rspack`, and `swc/rspack`. `vite` is listed
 in config types but intentionally fails with
 `bundler "vite" is not implemented yet` until a real adapter exists. For
-standalone output, verify `/` serves HTML, `/assets/client.js` serves
-JavaScript, and at least one RPC endpoint returns `ok: true`.
+standalone output, verify `dist/client/index.html` and
+`dist/client/assets/client.js` exist, `dist/server/client` is not created, and
+at least one RPC endpoint returns `ok: true`.
 
 Before committing, run:
 
@@ -66,9 +67,9 @@ deno test -A --no-check tests/
 not reintroduce an `examples/template` package or a `deno.json.tmpl` lookup.
 
 Client and server build output are separate under `dist/client` and
-`dist/server`. The standalone server bundle must copy `dist/client` into
-`dist/server/client` and generated `main.ts` must serve static client files
-before falling back to `index.html`.
+`dist/server`. Server output must not copy or serve client static files; use
+`dist/client` with `preview` or an external static file server for browser
+assets.
 
 When loading user project modules such as `app/layout.tsx`, use the user
 project’s own `deno.json` import map. Do not dynamically import these modules
@@ -87,6 +88,13 @@ classification, diagnostics, and RPC metadata in the bundler-independent
 Rspack plugin should call those shared packages, surface diagnostics through
 Rspack, and emit or connect generated assets rather than reimplementing analyzer
 logic in Rspack-specific code.
+
+For `bundler: "rspack"`, do not call `compileProject()` as a standalone parser
+pre-scan. Rspack builds are orchestrated through `packages/rspack-plugin`, which
+analyzes sources with the shared analyzer APIs, generates virtual client/server
+entries, and bundles both client and server output without relying on
+`.ultimate/generated/*.ts`. Native builds still use the existing compiler and
+generated-file flow.
 
 ## Commit & Pull Request Guidelines
 
@@ -131,8 +139,11 @@ CLI runtime overrides follow a consistent precedence order: explicit flags, then
 environment variables, then resolved `ultimate.config.ts` defaults. `dev`
 supports `--port`, `--api-port`, `--host`, and `--rpc-endpoint`; server runtime
 entry points such as `preview`, `dist/server/main.ts`, and compiled executable
-output support `--port`, `--host`, and `--rpc-endpoint`. The resolved config is
-still baked into server output as the default runtime options.
+output support `--port`, `--host`, and `--rpc-endpoint`. The `build` command
+also supports `--parser` and `--bundler`, with environment fallbacks
+`ULTIMATE_BUILD_PARSER` / `ULTIMATE_PARSER` and `ULTIMATE_BUILD_BUNDLER` /
+`ULTIMATE_BUNDLER`. The resolved config is still baked into server output as the
+default runtime options.
 
 RPC streaming resume uses `Ultimate-Session-Cursor`; do not reintroduce
 `Ultimate-Session-Id`. SSE cursor values are server-generated UUIDs, opaque to
