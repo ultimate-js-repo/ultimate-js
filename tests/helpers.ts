@@ -93,6 +93,15 @@ export async function buildTest(opts: {
     assertEquals(err instanceof Deno.errors.NotFound, true);
   }
 
+  if (opts.bundler === "rspack") {
+    try {
+      await Deno.stat(join(SHOWCASE, ".ultimate", "generated"));
+      throw new Error(".ultimate/generated should not exist for rspack builds");
+    } catch (err) {
+      assertEquals(err instanceof Deno.errors.NotFound, true);
+    }
+  }
+
   if (opts.output === "executable") {
     const bin = join(SHOWCASE, "dist/server/server");
     assertEquals((await Deno.stat(bin)).isFile, true, "executable missing");
