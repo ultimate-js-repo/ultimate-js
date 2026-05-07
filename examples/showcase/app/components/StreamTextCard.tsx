@@ -43,7 +43,7 @@ export function StreamTextCard(): React.ReactElement {
           onClick={handleStream}
           disabled={streaming}
         >
-          {streaming ? "Streaming..." : "Stream Text"}
+          {streaming ? "Streaming..." : "Stream Random Text"}
         </button>
 
         <div className="stream-output" aria-live="polite">
