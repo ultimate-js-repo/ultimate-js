@@ -77,6 +77,7 @@ export async function buildTest(opts: {
   const clientJs = join(SHOWCASE, "dist/client/assets/client.js");
   const clientHtml = join(SHOWCASE, "dist/client/index.html");
   const serverMain = join(SHOWCASE, "dist/server/main.ts");
+  const serverClientDir = join(SHOWCASE, "dist/server/client");
 
   assertEquals((await Deno.stat(clientJs)).isFile, true, "client.js missing");
   assertEquals(
@@ -85,6 +86,12 @@ export async function buildTest(opts: {
     "index.html missing",
   );
   assertEquals((await Deno.stat(serverMain)).isFile, true, "main.ts missing");
+  try {
+    await Deno.stat(serverClientDir);
+    throw new Error("dist/server/client should not exist");
+  } catch (err) {
+    assertEquals(err instanceof Deno.errors.NotFound, true);
+  }
 
   if (opts.output === "executable") {
     const bin = join(SHOWCASE, "dist/server/server");
