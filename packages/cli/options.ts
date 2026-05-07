@@ -1,4 +1,8 @@
-import type { ResolvedConfig } from "@ultimate-js/core";
+import type {
+  BundlerType,
+  ParserType,
+  ResolvedConfig,
+} from "@ultimate-js/core";
 
 export interface CommandOptions {
   project: string;
@@ -10,6 +14,11 @@ export interface RuntimeOverrides {
   apiPort?: number;
   host?: string;
   endpoint?: string;
+}
+
+export interface BuildOverrides extends RuntimeOverrides {
+  bundler?: BundlerType;
+  parser?: ParserType;
 }
 
 type FlagValue = string | true;
@@ -81,6 +90,32 @@ export function applyServerOverrides(
   return mergeConfig(config, overrides, { updateServer: true });
 }
 
+export function applyBuildOverrides(
+  config: ResolvedConfig,
+  args: string[],
+  env: Deno.Env = Deno.env,
+): ResolvedConfig {
+  const flags = parseFlags(args);
+  const runtimeOverrides = readRuntimeOverridesFromFlags(flags, env, {
+    portEnv: ["ULTIMATE_SERVER_PORT", "ULTIMATE_PORT", "PORT"],
+    hostEnv: ["ULTIMATE_SERVER_HOST", "ULTIMATE_HOST", "HOST"],
+    endpointEnv: [
+      "ULTIMATE_SERVER_RPC_ENDPOINT",
+      "ULTIMATE_RPC_ENDPOINT",
+      "RPC_ENDPOINT",
+      "ENDPOINT",
+    ],
+  });
+  const buildOverrides = readBuildOverrides(flags, env);
+  const merged = mergeConfig(config, runtimeOverrides, { updateServer: true });
+
+  return {
+    ...merged,
+    bundler: buildOverrides.bundler ?? merged.bundler,
+    parser: buildOverrides.parser ?? merged.parser,
+  };
+}
+
 function mergeConfig(
   config: ResolvedConfig,
   overrides: RuntimeOverrides,
@@ -142,8 +177,19 @@ function readRuntimeOverrides(
     endpointEnv: string[];
   },
 ): RuntimeOverrides {
-  const flags = parseFlags(args);
+  return readRuntimeOverridesFromFlags(parseFlags(args), env, names);
+}
 
+function readRuntimeOverridesFromFlags(
+  flags: Map<string, FlagValue>,
+  env: Deno.Env,
+  names: {
+    portEnv: string[];
+    apiPortEnv?: string[];
+    hostEnv: string[];
+    endpointEnv: string[];
+  },
+): RuntimeOverrides {
   return {
     port: readPortFlag(flags, ["port", "listen-port"]) ??
       readPortEnv(env, names.portEnv),
@@ -153,6 +199,18 @@ function readRuntimeOverrides(
       readStringEnv(env, names.hostEnv),
     endpoint: readStringFlag(flags, ["rpc-endpoint", "endpoint"]) ??
       readStringEnv(env, names.endpointEnv),
+  };
+}
+
+function readBuildOverrides(
+  flags: Map<string, FlagValue>,
+  env: Deno.Env,
+): Pick<BuildOverrides, "bundler" | "parser"> {
+  return {
+    bundler: readBundlerFlag(flags, ["bundler"]) ??
+      readBundlerEnv(env, ["ULTIMATE_BUILD_BUNDLER", "ULTIMATE_BUNDLER"]),
+    parser: readParserFlag(flags, ["parser"]) ??
+      readParserEnv(env, ["ULTIMATE_BUILD_PARSER", "ULTIMATE_PARSER"]),
   };
 }
 
@@ -202,6 +260,26 @@ function readStringFlag(
   }
 }
 
+function readBundlerFlag(
+  flags: Map<string, FlagValue>,
+  names: string[],
+): BundlerType | undefined {
+  for (const name of names) {
+    const value = flags.get(name);
+    if (typeof value === "string") return parseBundler(value, `--${name}`);
+  }
+}
+
+function readParserFlag(
+  flags: Map<string, FlagValue>,
+  names: string[],
+): ParserType | undefined {
+  for (const name of names) {
+    const value = flags.get(name);
+    if (typeof value === "string") return parseParser(value, `--${name}`);
+  }
+}
+
 function readPortEnv(env: Deno.Env, names: string[]): number | undefined {
   for (const name of names) {
     const value = env.get(name);
@@ -216,12 +294,45 @@ function readStringEnv(env: Deno.Env, names: string[]): string | undefined {
   }
 }
 
+function readBundlerEnv(
+  env: Deno.Env,
+  names: string[],
+): BundlerType | undefined {
+  for (const name of names) {
+    const value = env.get(name);
+    if (value) return parseBundler(value, name);
+  }
+}
+
+function readParserEnv(env: Deno.Env, names: string[]): ParserType | undefined {
+  for (const name of names) {
+    const value = env.get(name);
+    if (value) return parseParser(value, name);
+  }
+}
+
 function parsePort(value: string, source: string): number {
   const port = Number(value);
   if (!Number.isInteger(port) || port < 0 || port > 65535) {
     throw new Error(`${source} must be a valid TCP port`);
   }
   return port;
+}
+
+function parseBundler(value: string, source: string): BundlerType {
+  const normalized = value.trim();
+  if (
+    normalized === "native" || normalized === "vite" || normalized === "rspack"
+  ) {
+    return normalized;
+  }
+  throw new Error(`${source} must be one of: native, vite, rspack`);
+}
+
+function parseParser(value: string, source: string): ParserType {
+  const normalized = value.trim();
+  if (normalized === "babel" || normalized === "swc") return normalized;
+  throw new Error(`${source} must be one of: babel, swc`);
 }
 
 function normalizeEndpoint(endpoint: string): string {

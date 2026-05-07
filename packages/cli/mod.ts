@@ -1,6 +1,7 @@
 import { resolveProjectRoot } from "./utils.ts";
 import { loadConfig } from "@ultimate-js/core";
 import {
+  applyBuildOverrides,
   applyDevOverrides,
   applyServerOverrides,
   parseCommandOptions,
@@ -47,7 +48,7 @@ async function main() {
     }
     case "build": {
       const { build } = await import("./build.ts");
-      await build(projectRoot, applyServerOverrides(baseConfig, options.rest));
+      await build(projectRoot, applyBuildOverrides(baseConfig, options.rest));
       break;
     }
     case "preview": {
